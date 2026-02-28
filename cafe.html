@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>GDUT Pixel Cafe: Ultimate Edition</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { 
+            image-rendering: pixelated; 
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            background: #23120b; 
+        }
+        .ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+        .back-btn {
+            background: #8d6e63;
+            color: white;
+            padding: 10px 20px;
+            border: 4px solid #4e342e;
+            text-decoration: none;
+            font-weight: bold;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+
+<div class="ui-overlay">
+    <a class="back-btn" href="index.html">⬅ 返回校门口</a>
+</div>
+
+<canvas id="cafeCanvas" width="1024" height="1024"></canvas>
+
+<script>
+    const canvas = document.getElementById('cafeCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 极致精度：SCALE为1，意味着1024x1024个真实像素点
+    const SCALE = 2; 
+    let frame = 0;
+
+    // 调色盘
+    const C = {
+        WOOD: '#5d4037', WOOD_LIGHT: '#8d6e63', WOOD_DARK: '#3e2723',
+        STEAM: 'rgba(255, 255, 255, 0.3)',
+        COFFEE: '#21130d',
+        CUP: '#f5f5f5', CUP_SHADOW: '#d7ccc8',
+        LIGHT: 'rgba(255, 213, 79, 0.15)',
+        WALL: '#2c1e1a'
+    };
+
+    // 蒸汽粒子
+    const steamParticles = Array.from({length: 20}, () => ({
+        x: 0, y: 0, s: Math.random() * 2 + 1, vx: Math.random() * 0.5 - 0.25
+    }));
+
+    function drawP(x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.round(x * SCALE), Math.round(y * SCALE), Math.round(w * SCALE), Math.round(h * SCALE));
+    }
+
+    function render() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const center = { x: 256, y: 256 }; // 逻辑坐标
+
+        // 1. 墙面纹理 (微细像素噪点模拟墙皮)
+        for(let i=0; i<256; i+=2) {
+            for(let j=0; j<256; j+=2) {
+                let noise = Math.sin(i*j + frame*0.01) * 5;
+                drawP(i*2, j*2, 2, 2, `rgb(${44+noise}, ${30+noise}, ${26+noise})`);
+            }
+        }
+
+        // 2. 吧台绘制 (极致木纹)
+        for(let i=0; i<512; i+=1) {
+            let woodNoise = Math.sin(i * 0.1) * 10;
+            drawP(0, 350 + i, 512, 1, `rgb(${62+woodNoise}, ${39+woodNoise}, ${35+woodNoise})`);
+            // 绘制横向木质纹理
+            if(i % 20 === 0) drawP(0, 350+i, 512, 0.5, C.WOOD_DARK);
+        }
+
+        // 3. 咖啡杯 (极致边缘圆滑处理)
+        const cupPos = { x: 256, y: 320 };
+        // 杯托
+        drawP(cupPos.x - 40, cupPos.y + 25, 80, 5, C.CUP_SHADOW);
+        drawP(cupPos.x - 38, cupPos.y + 22, 76, 3, C.CUP);
+        // 杯身
+        drawP(cupPos.x - 25, cupPos.y - 20, 50, 45, C.CUP_SHADOW);
+        drawP(cupPos.x - 23, cupPos.y - 20, 46, 43, C.CUP);
+        // 杯内咖啡
+        drawP(cupPos.x - 18, cupPos.y - 15, 36, 5, C.COFFEE);
+        // 杯子高光 (极细线条)
+        drawP(cupPos.x - 20, cupPos.y - 15, 1.5, 30, '#ffffff');
+
+        // 4. 动态蒸汽粒子系统 (性能挑战点)
+        steamParticles.forEach((p, i) => {
+            if(frame % 2 === 0) p.y -= p.s;
+            p.x = cupPos.x + Math.sin(frame * 0.05 + i) * 10;
+            if(p.y < -100) p.y = 0;
+            
+            let alpha = 1 - (Math.abs(p.y) / 100);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
+            // 绘制微小的像素烟雾团
+            drawP(p.x + p.vx, cupPos.y - 30 + p.y, 3, 3, ctx.fillStyle);
+            drawP(p.x + 2, cupPos.y - 35 + p.y, 2, 2, ctx.fillStyle);
+        });
+
+        // 5. 极致光影：暖黄射灯 (Radial Gradient)
+        let lightGrad = ctx.createRadialGradient(
+            center.x * SCALE, 100 * SCALE, 50 * SCALE, 
+            center.x * SCALE, 350 * SCALE, 400 * SCALE
+        );
+        lightGrad.addColorStop(0, 'rgba(255, 213, 79, 0.3)');
+        lightGrad.addColorStop(0.5, 'rgba(255, 143, 0, 0.1)');
+        lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+        ctx.fillStyle = lightGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 6. 氛围细节：桌上的反光
+        drawP(cupPos.x - 60, cupPos.y + 40, 120, 1, 'rgba(255,255,255,0.1)');
+        
+        // 7. 动态扫描线 (模拟复古显示器感)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        for(let i=0; i<canvas.height; i+=4) {
+            ctx.fillRect(0, i, canvas.width, 1);
+        }
+
+        requestAnimationFrame(render);
+    }
+
+    render();
+</script>
+</body>
+</html>
