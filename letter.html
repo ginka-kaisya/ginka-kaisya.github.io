@@ -4,189 +4,209 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Honor & Legacy | GDUT</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
-            --gdut-red: #b13e53;
-            --gdut-gold: #d9b36a;
-            --accent-blue: #6366f1;
-            --glass: rgba(255, 255, 255, 0.75);
+            --gdut-red: #a3262a;
+            --gold: #d4af37;
+            --paper: #fffdf9;
         }
 
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
         body, html {
             margin: 0; padding: 0; height: 100%;
-            background: #fdfdfd;
+            background: #eef2f3;
             overflow: hidden;
             display: flex; justify-content: center; align-items: center;
-            font-family: 'PingFang SC', 'SF Pro Display', system-ui;
+            font-family: 'STKaiti', 'KaiTi', serif;
         }
 
-        /* --- 动态光影场 --- */
-        .ambient-light {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        /* --- 背景 1：全屏丝绸渐变 --- */
+        .ambient-bg {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             z-index: 0;
         }
 
-        .light-blob {
-            position: absolute; border-radius: 50%;
-            filter: blur(120px);
-            mix-blend-mode: multiply;
-            animation: move linear infinite;
-            will-change: transform;
+        /* --- 背景 2：远山叠影 --- */
+        .mountains {
+            position: fixed; bottom: 0; width: 100%; height: 45%;
+            z-index: 1; pointer-events: none; opacity: 0.5; filter: blur(1px);
+        }
+        .mountain {
+            position: absolute; bottom: -20px; background: #94a3b8;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .m-1 { width: 700px; height: 350px; left: -150px; opacity: 0.8; }
+        .m-2 { width: 900px; height: 450px; right: -250px; opacity: 0.6; }
+
+        /* --- 背景 3：墨韵粒子（找回来了！） --- */
+        .ink-drops { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+        .drop {
+            position: absolute; background: var(--gdut-red);
+            border-radius: 50%; opacity: 0.12; filter: blur(10px);
+            animation: rise 25s linear infinite;
         }
 
-        .l-1 { width: 800px; height: 800px; background: rgba(177, 62, 83, 0.12); top: -20%; right: -10%; animation-duration: 25s; }
-        .l-2 { width: 700px; height: 700px; background: rgba(99, 102, 241, 0.1); bottom: -15%; left: -5%; animation-duration: 20s; animation-direction: reverse; }
-        .l-3 { width: 600px; height: 600px; background: rgba(217, 179, 106, 0.15); top: 20%; left: 10%; animation-duration: 30s; }
-
-        @keyframes move {
-            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-            33% { transform: translate(150px, 100px) scale(1.2) rotate(120deg); }
-            66% { transform: translate(-80px, 150px) scale(0.9) rotate(240deg); }
-            100% { transform: translate(0, 0) scale(1) rotate(360deg); }
+        @keyframes rise {
+            from { transform: translateY(110vh) scale(0.5); opacity: 0; }
+            20% { opacity: 0.15; }
+            80% { opacity: 0.1; }
+            to { transform: translateY(-20vh) scale(2); opacity: 0; }
         }
 
-        /* --- 舞台容器 --- */
+        /* --- 3D 舞台 --- */
         .stage {
             position: relative; z-index: 10;
-            perspective: 1500px;
+            perspective: 2000px;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* --- 3D 浮雕通知书 --- */
-        .honor-card {
-            width: 380px; height: 560px;
-            background: var(--glass);
-            backdrop-filter: blur(30px) saturate(200%);
-            -webkit-backdrop-filter: blur(30px) saturate(200%);
-            border-radius: 40px;
-            /* 极其精细的复合阴影 */
-            box-shadow: 
-                0 0 0 1px rgba(255,255,255,0.8),
-                0 20px 50px rgba(0,0,0,0.06),
-                inset 0 0 20px rgba(255,255,255,0.5);
-            padding: 4px;
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            animation: cardPop 1s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .honor-card:hover {
-            transform: translateY(-15px) rotateX(4deg) scale(1.02);
-            box-shadow: 0 40px 80px rgba(177, 62, 83, 0.12);
-        }
-
-        /* 内层浮雕效果 */
-        .card-inner {
-            height: 100%; width: 100%;
-            border-radius: 36px;
-            border: 1px solid rgba(177, 62, 83, 0.08);
-            padding: 60px 40px;
-            display: flex; flex-direction: column;
+        /* --- 悬浮动画容器 --- */
+        .float-wrapper {
             position: relative;
-            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+            animation: floating 4s ease-in-out infinite;
+            transform-style: preserve-3d;
         }
 
-        /* 文字动效序列 */
-        .reveal-text {
-            opacity: 0; transform: translateY(20px);
-            animation: reveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        /* --- 实体通知书卡片 --- */
+        .honor-card {
+            width: 390px; height: 560px;
+            background: var(--paper);
+            background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+            border-radius: 4px;
+            position: relative;
+            border: 1px solid #e0d5c1;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.15s ease-out;
+            z-index: 5;
+            overflow: hidden;
         }
 
-        .header-section { animation-delay: 0.4s; text-align: center; }
-        .body-section { animation-delay: 0.7s; margin-top: 50px; flex: 1; }
-        .footer-section { animation-delay: 1s; }
-
-        .header-section h2 {
-            margin: 0; font-size: 2.2rem; letter-spacing: 12px;
-            background: linear-gradient(to bottom, #1e293b, var(--gdut-red));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 900;
+        /* 动态同步阴影 */
+        .card-shadow {
+            position: absolute; bottom: -60px; left: 50%;
+            width: 75%; height: 25px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            filter: blur(25px);
+            z-index: 4;
+            animation: shadowScale 4s ease-in-out infinite;
         }
 
-        .body-section {
-            font-family: 'STKaiti', 'KaiTi', serif;
-            font-size: 1.2rem; line-height: 2.2; color: #334155;
-            text-align: justify;
+        /* 卡片内部装饰 */
+        .gold-border { position: absolute; inset: 15px; border: 2px solid var(--gold); pointer-events: none; }
+        .ribbon {
+            position: absolute; top: 35px; left: -45px; width: 180px; height: 35px;
+            background: var(--gdut-red); color: white; transform: rotate(-45deg);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 6; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
+
+        .card-inner { padding: 55px 40px; height: 100%; display: flex; flex-direction: column; position: relative; }
+        .header-section h1 { color: var(--gdut-red); font-size: 2.6rem; margin: 15px 0; letter-spacing: 12px; font-family: "SimSun", serif; font-weight: 900; text-align: center; }
+        .body-section { flex: 1; font-size: 1.2rem; line-height: 2.2; color: #2c1810; text-align: justify; }
         
-        .body-section b { color: var(--gdut-red); border-bottom: 2px solid rgba(177,62,83,0.1); }
-
-        .signature {
-            border-top: 1px solid rgba(0,0,0,0.05); padding-top: 25px;
-            text-align: right; color: #64748b; font-family: 'KaiTi', serif;
+        /* 烫金印章 */
+        .stamp-square { 
+            width: 50px; height: 50px; border: 2.5px solid var(--gdut-red); 
+            color: var(--gdut-red); display: flex; align-items: center; 
+            justify-content: center; font-weight: bold; text-align: center; 
+            position: absolute; bottom: 50px; right: 40px; 
+            transform: rotate(-10deg); opacity: 0.8;
         }
 
-        /* --- 交互式功能键 --- */
-        .actions {
-            margin-top: 50px; display: flex; gap: 15px;
-            animation: reveal 0.8s 1.2s both;
+        /* 按钮 */
+        .actions { margin-top: 60px; display: flex; gap: 20px; }
+        .btn { padding: 14px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; transition: 0.4s; }
+        .btn-main { background: var(--gdut-red); color: white; box-shadow: 0 10px 25px rgba(163, 38, 42, 0.3); }
+        .btn-sub { background: rgba(255,255,255,0.8); color: #333; backdrop-filter: blur(5px); border: 1px solid #ddd; }
+        .btn:hover { transform: translateY(-5px); }
+
+        /* 动画 */
+        @keyframes floating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
         }
-
-        .btn {
-            padding: 14px 32px; border-radius: 100px;
-            text-decoration: none; font-size: 0.9rem; font-weight: 700;
-            transition: 0.4s; display: flex; align-items: center;
-            background: white; color: #1e293b;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid #eee;
-        }
-
-        .btn-primary { background: var(--gdut-red); color: white; border: none; }
-
-        .btn:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-        }
-
-        .btn-primary:hover { box-shadow: 0 15px 30px rgba(177, 62, 83, 0.3); }
-
-        /* --- 动画关键帧 --- */
-        @keyframes reveal {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes cardPop {
-            from { opacity: 0; transform: scale(0.8) translateY(100px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+        @keyframes shadowScale {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.3; }
+            50% { transform: translateX(-50%) scale(0.8); opacity: 0.1; filter: blur(40px); }
         }
     </style>
 </head>
 <body>
 
-    <div class="ambient-light">
-        <div class="light-blob l-1"></div>
-        <div class="light-blob l-2"></div>
-        <div class="light-blob l-3"></div>
+    <div class="ambient-bg"></div>
+    <div class="mountains">
+        <div class="mountain m-1"></div>
+        <div class="mountain m-2"></div>
     </div>
 
-    <div class="stage">
-        <div class="honor-card">
-            <div class="card-inner">
-                <div class="header-section reveal-text">
-                    <div style="font-size: 10px; color: var(--gdut-gold); letter-spacing: 4px; margin-bottom: 10px;">ESTABLISHED 1958</div>
-                    <h2>录取通知书</h2>
-                </div>
-                
-                <div class="body-section reveal-text">
-                    <p>亲爱的同学：</p>
-                    <p>祝贺你被我校录取为 <b>2026级</b>新生。星光不问赶路人，时光不负有心人，广东工业大学欢迎你的到来！</p>
-                </div>
+    <div class="ink-drops" id="ink-container"></div>
 
-                <div class="footer-section reveal-text">
-                    <div class="signature">
-                        校长：邱学青<br>
-                        <span style="font-size: 12px; opacity: 0.6;">二〇二六年七月</span>
+    <div class="stage">
+        <div class="float-wrapper">
+            <div class="card-shadow"></div>
+            <div class="honor-card" id="tilt-card">
+                <div class="ribbon">录取荣誉</div>
+                <div class="gold-border"></div>
+                <div class="card-inner">
+                    <div class="header-section">
+                        <div style="color: var(--gold); letter-spacing: 5px; font-weight: bold; font-size: 0.7rem;">GDUT ADMISSION 2026</div>
+                        <h1>录取通知书</h1>
                     </div>
+                    <div class="body-section">
+                        <p>亲爱的同学：</p>
+                        <p>祝贺你被录取为我校 <b>2026</b> 级新生。在这里，你将开启人生最绚烂的一页，广东工业大学欢迎你！</p>
+                    </div>
+                    <div class="stamp-square">邱学<br>青印</div>
+                    <div style="text-align: right; color: #888; font-size: 0.9rem;">二〇二六年七月</div>
                 </div>
             </div>
         </div>
 
         <div class="actions">
-            <a href="index.html" class="btn">返回校园大厅</a>
-            <a href="https://www.gdut.edu.cn/" class="btn btn-primary" target="_blank">进入迎新系统</a>
+            <a href="index.html" class="btn btn-sub">返回大厅</a>
+            <a href="https://www.gdut.edu.cn/" class="btn btn-main">进入迎新系统</a>
         </div>
     </div>
 
+    <script>
+        // 1. 重新生成墨韵粒子
+        const inkContainer = document.getElementById('ink-container');
+        for (let i = 0; i < 20; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'drop';
+            drop.style.left = Math.random() * 100 + 'vw';
+            // 随机大小
+            const size = Math.random() * 60 + 20 + 'px';
+            drop.style.width = size;
+            drop.style.height = size;
+            // 随机速度和延迟
+            drop.style.animationDuration = Math.random() * 15 + 15 + 's';
+            drop.style.animationDelay = Math.random() * -20 + 's';
+            inkContainer.appendChild(drop);
+        }
+
+        // 2. 鼠标 3D 倾斜逻辑
+        const card = document.getElementById('tilt-card');
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 30;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 30;
+            card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        // 3. 开场喷洒礼带
+        window.onload = function() {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.7 },
+                colors: ['#a3262a', '#d4af37', '#ffffff']
+            });
+        }
+    </script>
 </body>
 </html>
