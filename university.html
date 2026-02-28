@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDUT Legacy | 现代广工</title>
+    <title>GDUT Legacy | 现代广工门户</title>
     <style>
         :root {
             --gdut-red: #b13e53;
             --gdut-dark: #1a1c2c;
+            --gdut-gold: #eab308;
             --surface: rgba(255, 255, 255, 0.9);
             --font-main: 'PingFang SC', 'SF Pro Display', 'Microsoft YaHei', sans-serif;
         }
@@ -24,11 +25,9 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            /* 背景渐变增强质感 */
             background: radial-gradient(circle at top right, #ffffff, #e2e8f0);
         }
 
-        /* 响应式玻璃拟态卡片 */
         .main-container {
             width: 95vw;
             max-width: 1200px;
@@ -45,10 +44,10 @@
 
         @media (max-width: 968px) {
             .main-container { flex-direction: column; height: 95vh; }
-            .canvas-wrapper { height: 45% !important; border-right: none !important; }
+            .canvas-wrapper { height: 40% !important; border-right: none !important; }
+            .content-wrapper { padding: 30px !important; }
         }
 
-        /* 左侧：高级矢量渲染区 */
         .canvas-wrapper {
             flex: 1.5;
             background: #f8fafc;
@@ -59,14 +58,8 @@
             align-items: center;
         }
 
-        canvas {
-            width: 100%;
-            height: 100%;
-            /* 关键：取消像素化渲染，开启平滑渲染 */
-            image-rendering: auto; 
-        }
+        canvas { width: 100%; height: 100%; image-rendering: auto; }
 
-        /* 右侧：控制与内容区 */
         .content-wrapper {
             flex: 1;
             padding: 60px;
@@ -84,11 +77,10 @@
             font-weight: 600;
             transition: 0.3s;
         }
-
         .back-btn:hover { color: var(--gdut-red); transform: translateX(-5px); }
 
         .hero-text h1 {
-            font-size: clamp(2.5rem, 4vw, 4rem);
+            font-size: clamp(2.2rem, 4vw, 3.5rem);
             line-height: 1.1;
             margin: 20px 0;
             color: var(--gdut-dark);
@@ -97,7 +89,7 @@
 
         .hero-text p {
             color: #64748b;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             line-height: 1.8;
         }
 
@@ -107,23 +99,44 @@
             gap: 15px;
         }
 
+        /* 按钮通用样式 */
+        .btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            padding: 20px;
+            border-radius: 18px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
         .primary-btn {
             background: var(--gdut-red);
             color: white;
-            border: none;
-            padding: 22px;
-            border-radius: 20px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 20px 40px rgba(177, 62, 83, 0.2);
+            box-shadow: 0 15px 30px rgba(177, 62, 83, 0.2);
         }
-
         .primary-btn:hover {
             transform: translateY(-5px);
-            box-shadow: 0 25px 50px rgba(177, 62, 83, 0.3);
+            box-shadow: 0 20px 40px rgba(177, 62, 83, 0.3);
             background: #962d41;
+        }
+
+        .secondary-btn {
+            background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+            color: #854d0e;
+            border: 1px solid rgba(234, 179, 8, 0.2);
+            box-shadow: 0 10px 20px rgba(234, 179, 8, 0.1);
+        }
+        .secondary-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(234, 179, 8, 0.2);
+            background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
         }
 
         @keyframes appEntrance {
@@ -141,15 +154,16 @@
 
         <div class="content-wrapper">
             <div>
-                <a href="index.html" class="back-btn">← 樱花林首页</a>
+                <a href="index.html" class="back-btn">← 返回首页</a>
                 <div class="hero-text">
                     <h1>LEGACY<br>REBORN</h1>
-                    <p>通过现代几何美学重构的广工大校门。移除所有冗余的颗粒感，拥抱纯净的矢量光影。这不仅是代码的迭代，更是审美的跨越。</p>
+                    <p>欢迎来到广东工业大学。在这里，传统与现代几何美学交织。点击下方按钮，开启你的工大之旅或查询你的荣耀时刻。</p>
                 </div>
             </div>
 
             <div class="action-group">
-                <button class="primary-btn" onclick="this.innerText='即将进入校园...'">进入虚拟校区</button>
+                <a href="https://www.gdut.edu.cn/" class="btn primary-btn" target="_blank">进入虚拟校区</a>
+                <button class="btn secondary-btn" onclick="alert('录取通知书正在云端生成，请保持期待！')">领取录取通知书</button>
             </div>
         </div>
     </div>
@@ -159,7 +173,6 @@
     const ctx = canvas.getContext('2d');
     let frame = 0;
 
-    // 动态调整 Canvas 物理像素，解决模糊问题
     function resize() {
         const ratio = window.devicePixelRatio || 1;
         canvas.width = canvas.clientWidth * ratio;
@@ -178,52 +191,43 @@
         const cx = w / 2;
         const cy = h * 0.45;
 
-        // 1. 柔和的环境投影 (Floor Shadow)
+        // 1. 地面投影
         const shadowGrad = ctx.createRadialGradient(cx, cy + 250, 50, cx, cy + 250, 300);
         shadowGrad.addColorStop(0, 'rgba(0,0,0,0.06)');
         shadowGrad.addColorStop(1, 'transparent');
         ctx.fillStyle = shadowGrad;
         ctx.fillRect(0, cy + 100, w, 300);
 
-        // 2. 绘制主体结构：使用矢量路径
-        // 设置全局阴影样式，模拟自然漫反射
+        // 2. 绘制主体
         ctx.shadowColor = 'rgba(100, 116, 139, 0.1)';
         ctx.shadowBlur = 40;
         ctx.shadowOffsetY = 20;
 
-        // 绘制立柱 (极简白色石材感)
         ctx.fillStyle = "#ffffff";
-        
-        // 左立柱
         drawRoundedRect(ctx, cx - 180, cy - 80, 50, 350, 12);
-        // 右立柱
         drawRoundedRect(ctx, cx + 130, cy - 80, 50, 350, 12);
         ctx.fill();
 
-        // 3. 广工红横梁 (矢量渐变)
+        // 3. 广工红横梁
         ctx.shadowBlur = 20;
         ctx.shadowColor = 'rgba(177, 62, 83, 0.15)';
-        
         const beamGrad = ctx.createLinearGradient(cx - 220, 0, cx + 220, 0);
         beamGrad.addColorStop(0, '#b13e53');
         beamGrad.addColorStop(0.5, '#ce4b62');
         beamGrad.addColorStop(1, '#b13e53');
-        
         ctx.fillStyle = beamGrad;
         drawRoundedRect(ctx, cx - 220, cy - 60, 440, 65, 15);
         ctx.fill();
 
-        // 4. 校名书法 (平滑字体)
+        // 4. 校名
         ctx.shadowBlur = 0;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = "900 48px 'Hiragino Sans GB', 'STHeiti', serif";
-        
-        // 文字立体感
-        ctx.fillStyle = "#eab308"; // 金色
+        ctx.fillStyle = "#eab308"; 
         ctx.fillText("广东工业大学", cx, cy - 25);
 
-        // 5. 动态校徽 (极简圆环)
+        // 5. 动态校徽
         const pulse = Math.sin(frame * 0.04) * 0.5 + 0.5;
         ctx.beginPath();
         ctx.arc(cx, cy - 130, 28, 0, Math.PI * 2);
@@ -233,7 +237,7 @@
         ctx.lineWidth = 4;
         ctx.stroke();
 
-        // 6. 氛围装饰：流体粒子
+        // 6. 氛围粒子
         for(let i=0; i<8; i++) {
             let offset = (frame * 0.4 + i * 100) % h;
             ctx.fillStyle = 'rgba(177, 62, 83, 0.03)';
@@ -245,7 +249,6 @@
         requestAnimationFrame(render);
     }
 
-    // 圆角矩形辅助函数
     function drawRoundedRect(ctx, x, y, width, height, radius) {
         ctx.beginPath();
         ctx.moveTo(x + radius, y);
