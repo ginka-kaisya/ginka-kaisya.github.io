@@ -2,164 +2,221 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Stardew Sakura: Daylight Hanging</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakura & Teru Teru: GDUT Edition</title>
     <style>
-        body { margin: 0; background: #a5d6a7; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: "Microsoft YaHei", sans-serif; }
-        canvas { 
-            image-rendering: pixelated;
-            box-shadow: 0 20px 80px rgba(0,0,0,0.1);
-            background: #e8f5e9; 
-            cursor: default;
+        :root {
+            --primary: #81c784;
+            --accent: #ff8a80;
+            --glass: rgba(255, 255, 255, 0.85);
+            --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
         }
 
-        /* 搞钱/联系按键样式 */
-        .side-button {
-            position: fixed;
-            right: 30px;
-            top: 50%;
-            transform: translateY(-50%);
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #37474f;
+        }
+
+        .portal-container {
+            width: 95%;
+            max-width: 1100px;
+            display: flex;
+            gap: 25px;
+            padding: 20px;
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        @media (max-width: 900px) {
+            .portal-container { flex-direction: column; align-items: center; }
+            .canvas-side { width: 100% !important; height: 300px !important; }
+        }
+
+        /* 装饰窗容器 */
+        .canvas-side {
+            width: 400px;
+            height: 550px;
+            background: #fff;
+            border-radius: 35px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+            border: 10px solid white;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        /* 右侧面板 */
+        .content-side {
+            flex: 1;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 35px;
+            padding: 40px;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .header h1 { font-size: 2.8rem; margin: 0; color: #2e7d32; }
+        .header p { line-height: 1.8; color: #546e7a; }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
-            z-index: 100;
+            margin-top: 30px;
         }
 
-        .pixel-btn {
-            background: #ef5350; /* 呼应小人上衣颜色 */
-            color: white;
-            padding: 15px 20px;
-            border: 4px solid #b71c1c;
-            box-shadow: inset -4px -4px 0px 0px #b71c1c;
+        .nav-card {
+            padding: 20px;
+            border-radius: 20px;
             text-decoration: none;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            transition: all 0.1s;
-            cursor: pointer;
-            image-rendering: pixelated;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
         }
 
-        .pixel-btn:hover {
-            background: #ff5252;
-            transform: scale(1.1);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
+        .nav-card:hover { transform: translateY(-5px); filter: brightness(1.1); }
+        
+        .cafe-link { background: #90a4ae; }
+        .contact-link { background: #ff8a80; }
+        .campus-link { background: #81c784; grid-column: span 2; }
 
-        .pixel-btn:active {
-            transform: scale(0.95);
-            box-shadow: inset 4px 4px 0px 0px #b71c1c;
+        .nav-card span { font-size: 0.8rem; opacity: 0.9; font-weight: 400; margin-top: 5px; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-<div class="side-button">
-    <a class="pixel-btn" href="mailto:your-email@example.com">📩 商务合作</a>
-    <a class="pixel-btn" style="background: #5c6bc0; border-color: #303f9f;" href="cafe.html">☕ 在咖啡厅</a>
-    <a class="pixel-btn" style="background: #4caf50; border-color: #1b5e20;" href="university.html">🏫 广工校门</a>
-</div>
+    <div class="portal-container">
+        <div class="canvas-side">
+            <canvas id="dayCanvas" width="400" height="550"></canvas>
+        </div>
 
-<canvas id="dayCanvas" width="800" height="800"></canvas>
+        <div class="content-side">
+            <div class="header">
+                <h1>晴空樱花</h1>
+                <p>愿每一位广工学子的心头都挂着一个晴天娃娃。即使在忙碌的学期里，也能在这里找到一片永恒的宁静与花海。</p>
+            </div>
+
+            <div class="nav-grid">
+                <a href="cafe.html" class="nav-card cafe-link">☕ 躲进咖啡厅<span>午后光影体验</span></a>
+                <a href="mailto:contact@gdut.edu" class="nav-card contact-link">📩 留言板<span>分享你的心情</span></a>
+                <a href="university.html" class="nav-card campus-link">🏫 漫步校园<span>探索 2K 级虚拟广工</span></a>
+            </div>
+        </div>
+    </div>
 
 <script>
     const canvas = document.getElementById('dayCanvas');
     const ctx = canvas.getContext('2d');
-    const SCALE = 8;
+    const S = 6; 
     let frame = 0;
 
-    const SAKURA_COLORS = ['#ffdae0', '#ffb7c5', '#ffffff', '#fce4ec'];
-
-    const petals = Array.from({length: 45}, () => ({
+    // 樱花配置
+    const petals = Array.from({length: 40}, () => ({
         x: Math.random() * 100,
         y: Math.random() * 100,
-        s: Math.random() * 0.4 + 0.3, 
-        vx: Math.random() * 0.5 + 0.2, 
+        s: Math.random() * 0.3 + 0.2, // 飘落速度
+        vx: Math.random() * 0.4 + 0.1, // 横向风速
         r: Math.random() * Math.PI
     }));
 
-    function drawPixelRect(x, y, w, h, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * SCALE, y * SCALE, w * SCALE, h * SCALE);
+    function p(x, y, w, h, c) {
+        ctx.fillStyle = c;
+        ctx.fillRect(x * S, y * S, w * S, h * S);
     }
 
-    function render() {
+function render() {
         frame++;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = '#9ccc65'; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        for(let i=0; i<80; i++) {
-            let tx = (i * 29) % 100;
-            let ty = (i * 47) % 100;
-            drawPixelRect(tx, ty, 1, 1, '#aed581'); 
+        // 背景：清透天蓝色
+        ctx.fillStyle = '#e3f2fd';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 0. 绘制固定点：木质屋檐 (Eaves)
+        // 顶部横梁
+        p(0, 0, 100, 8, '#5d4037'); // 深色木头
+        p(0, 6, 100, 2, '#3e2723'); // 木头底部阴影
+        // 增加一点瓦片感
+        for(let i=0; i<10; i++) {
+            p(i*12, 0, 8, 2, '#4e342e');
         }
 
-        let swing = Math.sin(frame * 0.03) * 0.15; 
-        const base = { x: 50, y: 70 };
-        const hook = { x: base.x + 15, y: base.y - 40 };
-
-        ctx.fillStyle = 'rgba(46, 64, 32, 0.25)';
-        ctx.beginPath();
-        let shadowOffsetX = 12 + swing * 25; 
-        let shadowOffsetY = 5;
-        ctx.ellipse((hook.x + shadowOffsetX) * SCALE, (base.y + shadowOffsetY) * SCALE, 8 * SCALE, 4 * SCALE, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        drawPixelRect(base.x - 4, base.y - 2, 8, 3, '#2d3436'); 
-        ctx.strokeStyle = '#3d3d3d';
-        ctx.lineWidth = SCALE * 1.5;
-        ctx.beginPath();
-        ctx.moveTo(base.x * SCALE, base.y * SCALE);
-        ctx.lineTo(base.x * SCALE, (base.y - 38) * SCALE); 
-        ctx.quadraticCurveTo(base.x * SCALE, hook.y * SCALE, hook.x * SCALE, hook.y * SCALE); 
-        ctx.stroke();
-
-        drawPixelRect(hook.x - 3, hook.y - 1, 6, 8, '#444');
-        drawPixelRect(hook.x - 2, hook.y + 1, 4, 5, '#e0f7fa'); 
+        // 1. 绘制晴天娃娃 (Teru Teru Bozu)
+        let swing = Math.sin(frame * 0.04) * 0.12; // 稍微减小摆动，显得更有重量
+        let hX = 33, hY = 8; // 悬挂点改为从屋檐底部开始
 
         ctx.save();
-        ctx.translate(hook.x * SCALE, (hook.y + 1) * SCALE);
+        ctx.translate(hX * S, hY * S);
         ctx.rotate(swing);
+
+        // 核心修改：绳子现在紧紧系在屋檐(hY=8)上
+        p(-0.5, 0, 1, 15, '#90a4ae'); // 绳子
         
-        drawPixelRect(-0.5, 0, 1, 4, '#2d3436'); 
-        drawPixelRect(-3, 4, 6, 6, '#ffccbc');   
-        drawPixelRect(-4, 10, 8, 12, '#ef5350'); 
+        // 娃娃主体向下偏移 15 个单位
+        ctx.translate(0, 15 * S); 
         
-        let legSwing = Math.sin(frame * 0.03 - 0.6) * 0.1;
-        ctx.translate(0, 22 * SCALE);
-        ctx.rotate(legSwing);
-        drawPixelRect(-3.5, 0, 3, 9, '#5c6bc0'); 
-        drawPixelRect(0.5, 0, 3, 9, '#5c6bc0');
+        // 头部
+        p(-4, 0, 8, 8, '#ffffff');
+        p(-3, -1, 6, 1, '#ffffff');
+        p(-3, 8, 6, 1, '#ffffff');
+        // 眼睛
+        p(-2.5, 3, 1, 1, '#37474f');
+        p(1.5, 3, 1, 1, '#37474f');
+        // 红丝带
+        p(-4, 8, 8, 1, '#ff5252');
+        // 身体/布料下摆
+        p(-5, 9, 10, 8, '#ffffff');
+        // 下摆动态褶皱
+        for(let i=0; i<3; i++) {
+            let offset = Math.sin(frame * 0.1 + i) * 1.5;
+            p(-5 + i*4, 17 + offset, 2, 2, '#ffffff');
+        }
         ctx.restore();
 
-        petals.forEach((p, i) => {
-            p.y += p.s;
-            p.x += p.vx + Math.sin(frame * 0.01 + i) * 0.2;
-            if(p.y > 105) p.y = -5;
-            if(p.x > 105) p.x = -5;
-            
-            ctx.fillStyle = 'rgba(0,0,0,0.05)';
-            ctx.fillRect((p.x + 2) * SCALE, (p.y + 2) * SCALE, 1 * SCALE, 1 * SCALE);
-            
-            ctx.fillStyle = SAKURA_COLORS[i % 4];
+        // 2. 樱花循环飘落逻辑 (保持不变)
+        petals.forEach((petal, i) => {
+            petal.y += petal.s;
+            petal.x += petal.vx + Math.sin(frame * 0.02 + i) * 0.2;
+
+            if(petal.y > 100) {
+                petal.y = -5;
+                petal.x = Math.random() * 100;
+            }
+            if(petal.x > 100) petal.x = -5;
+
             ctx.save();
-            ctx.translate(p.x * SCALE, p.y * SCALE);
-            ctx.rotate(p.r + frame * 0.02);
-            ctx.fillRect(-0.4 * SCALE, -0.4 * SCALE, 1.2 * SCALE, 0.8 * SCALE);
+            ctx.translate(petal.x * S, petal.y * S);
+            ctx.rotate(petal.r + frame * 0.02);
+            ctx.fillStyle = i % 2 === 0 ? '#ffc0cb' : '#ffffff';
+            ctx.fillRect(-0.5 * S, -0.5 * S, 1.2 * S, 0.8 * S);
             ctx.restore();
         });
 
-        let sunGlow = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        sunGlow.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
-        sunGlow.addColorStop(1, 'rgba(255, 235, 59, 0.05)');
-        ctx.fillStyle = sunGlow;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         requestAnimationFrame(render);
     }
-
     render();
 </script>
 </body>
-</html>
+</html>    
