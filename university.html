@@ -2,143 +2,260 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>GDUT Legacy: Masterpiece Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDUT Legacy | 现代广工</title>
     <style>
-        body { margin: 0; background: #1a1c2c; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { 
-            image-rendering: pixelated; 
-            box-shadow: 0 0 100px rgba(0,0,0,0.8);
-            background: #2a2d3e;
-            border: 4px solid #3d4153;
+        :root {
+            --gdut-red: #b13e53;
+            --gdut-dark: #1a1c2c;
+            --surface: rgba(255, 255, 255, 0.9);
+            --font-main: 'PingFang SC', 'SF Pro Display', 'Microsoft YaHei', sans-serif;
         }
-        .ui { position: fixed; top: 20px; left: 20px; z-index: 100; font-family: 'Courier New', Courier, monospace; }
-        .btn { background: #5d275d; color: #ffcd75; padding: 10px 20px; border: 3px solid #b13e53; text-decoration: none; font-weight: bold; image-rendering: pixelated; display: block; }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            /* 背景渐变增强质感 */
+            background: radial-gradient(circle at top right, #ffffff, #e2e8f0);
+        }
+
+        /* 响应式玻璃拟态卡片 */
+        .main-container {
+            width: 95vw;
+            max-width: 1200px;
+            height: 85vh;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            display: flex;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.6);
+            overflow: hidden;
+            animation: appEntrance 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @media (max-width: 968px) {
+            .main-container { flex-direction: column; height: 95vh; }
+            .canvas-wrapper { height: 45% !important; border-right: none !important; }
+        }
+
+        /* 左侧：高级矢量渲染区 */
+        .canvas-wrapper {
+            flex: 1.5;
+            background: #f8fafc;
+            position: relative;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            /* 关键：取消像素化渲染，开启平滑渲染 */
+            image-rendering: auto; 
+        }
+
+        /* 右侧：控制与内容区 */
+        .content-wrapper {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .back-btn:hover { color: var(--gdut-red); transform: translateX(-5px); }
+
+        .hero-text h1 {
+            font-size: clamp(2.5rem, 4vw, 4rem);
+            line-height: 1.1;
+            margin: 20px 0;
+            color: var(--gdut-dark);
+            font-weight: 800;
+        }
+
+        .hero-text p {
+            color: #64748b;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .action-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .primary-btn {
+            background: var(--gdut-red);
+            color: white;
+            border: none;
+            padding: 22px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(177, 62, 83, 0.2);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(177, 62, 83, 0.3);
+            background: #962d41;
+        }
+
+        @keyframes appEntrance {
+            from { opacity: 0; transform: scale(0.9) translateY(40px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
     </style>
 </head>
 <body>
 
-<div class="ui"><a class="btn" href="index.html">< 返回樱花林</a></div>
-<canvas id="masterCanvas" width="1024" height="1024"></canvas>
+    <div class="main-container">
+        <div class="canvas-wrapper">
+            <canvas id="gateCanvas"></canvas>
+        </div>
+
+        <div class="content-wrapper">
+            <div>
+                <a href="index.html" class="back-btn">← 樱花林首页</a>
+                <div class="hero-text">
+                    <h1>LEGACY<br>REBORN</h1>
+                    <p>通过现代几何美学重构的广工大校门。移除所有冗余的颗粒感，拥抱纯净的矢量光影。这不仅是代码的迭代，更是审美的跨越。</p>
+                </div>
+            </div>
+
+            <div class="action-group">
+                <button class="primary-btn" onclick="this.innerText='即将进入校园...'">进入虚拟校区</button>
+            </div>
+        </div>
+    </div>
 
 <script>
-    const canvas = document.getElementById('masterCanvas');
+    const canvas = document.getElementById('gateCanvas');
     const ctx = canvas.getContext('2d');
-    const SCALE = 8;
     let frame = 0;
 
-    // 高级像素调色盘 (Hue Shifting)
-    const COLORS = {
-        SKY_GLOW: '#ffcd75', 
-        GATE_BODY: '#f4f4f4', GATE_SHADOW: '#3d4153',
-        RED_ACCENT: '#b13e53', RED_GLOW: '#ef7d57',
-        GRASS: '#38b764', GRASS_DARK: '#257179',
-        LEAF_PARTICLE: '#a7f070',
-        GOLD: '#feb543'
-    };
-
-    // 粒子系统：落叶
-    const leaves = Array.from({length: 20}, () => ({
-        x: Math.random() * 128, y: Math.random() * 128,
-        vx: Math.random() * 0.2 - 0.1, vy: Math.random() * 0.3 + 0.2,
-        r: Math.random() * Math.PI
-    }));
-
-    function drawP(x, y, w, h, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * SCALE, y * SCALE, w * SCALE, h * SCALE);
+    // 动态调整 Canvas 物理像素，解决模糊问题
+    function resize() {
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * ratio;
+        canvas.height = canvas.clientHeight * ratio;
+        ctx.scale(ratio, ratio);
     }
+    window.addEventListener('resize', resize);
+    resize();
 
     function render() {
         frame++;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        ctx.clearRect(0, 0, w, h);
 
-        // 1. 地面：仿古青砖铺装 (带纹理随机化)
-        for(let x=0; x<128; x+=4) {
-            for(let y=0; y<128; y+=2) {
-                let noise = Math.sin(x*y + frame*0.01);
-                drawP(x, y, 3.8, 1.8, noise > 0.5 ? '#29adff11' : '#1a1c2c');
-            }
-        }
+        const cx = w / 2;
+        const cy = h * 0.45;
 
-        const cx = 64, cy = 40;
+        // 1. 柔和的环境投影 (Floor Shadow)
+        const shadowGrad = ctx.createRadialGradient(cx, cy + 250, 50, cx, cy + 250, 300);
+        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.06)');
+        shadowGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = shadowGrad;
+        ctx.fillRect(0, cy + 100, w, 300);
 
-        // 2. 环境：夕阳光影
-        let grad = ctx.createRadialGradient(cx*SCALE, cy*SCALE, 0, cx*SCALE, cy*SCALE, 80*SCALE);
-        grad.addColorStop(0, 'rgba(255, 205, 117, 0.15)');
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0,0,canvas.width,canvas.height);
+        // 2. 绘制主体结构：使用矢量路径
+        // 设置全局阴影样式，模拟自然漫反射
+        ctx.shadowColor = 'rgba(100, 116, 139, 0.1)';
+        ctx.shadowBlur = 40;
+        ctx.shadowOffsetY = 20;
 
-        // 3. 广工正门：核心结构 (Detail Layers)
-        // 远景基座投影
-        ctx.fillStyle = 'rgba(19, 20, 36, 0.4)';
-        ctx.beginPath();
-        ctx.moveTo((cx-45)*SCALE, (cy+15)*SCALE);
-        ctx.lineTo((cx+70)*SCALE, (cy+45)*SCALE);
-        ctx.lineTo((cx+45)*SCALE, (cy+15)*SCALE);
+        // 绘制立柱 (极简白色石材感)
+        ctx.fillStyle = "#ffffff";
+        
+        // 左立柱
+        drawRoundedRect(ctx, cx - 180, cy - 80, 50, 350, 12);
+        // 右立柱
+        drawRoundedRect(ctx, cx + 130, cy - 80, 50, 350, 12);
         ctx.fill();
 
-        // 侧翼石墙
-        for(let side of [-1, 1]) {
-            let sx = cx + side * 35;
-            drawP(sx-10, cy-5, 20, 15, COLORS.GATE_SHADOW); // 厚度
-            drawP(sx-10, cy-12, 20, 10, COLORS.GATE_BODY);  // 顶面
-            // 缝隙细节
-            drawP(sx-5, cy-10, 0.5, 8, COLORS.GATE_SHADOW);
-        }
-
-        // 主门柱 (带有抗锯齿视觉处理的边缘高光)
-        drawP(cx-22, cy-25, 8, 45, COLORS.GATE_SHADOW);
-        drawP(cx+14, cy-25, 8, 45, COLORS.GATE_SHADOW);
-        drawP(cx-21.5, cy-25, 7, 44, COLORS.GATE_BODY); // 正面
-        drawP(cx+14.5, cy-25, 7, 44, COLORS.GATE_BODY);
-        drawP(cx-21.5, cy-25, 1, 44, '#ffffff'); // 极细高光边缘
-
-        // 标志性红色校名梁
-        drawP(cx-25, cy-22, 50, 8, COLORS.RED_ACCENT);
-        drawP(cx-24, cy-21.5, 48, 1, COLORS.RED_GLOW); // 顶部受光线
+        // 3. 广工红横梁 (矢量渐变)
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(177, 62, 83, 0.15)';
         
-        // 牌匾上的书法字体处理
+        const beamGrad = ctx.createLinearGradient(cx - 220, 0, cx + 220, 0);
+        beamGrad.addColorStop(0, '#b13e53');
+        beamGrad.addColorStop(0.5, '#ce4b62');
+        beamGrad.addColorStop(1, '#b13e53');
+        
+        ctx.fillStyle = beamGrad;
+        drawRoundedRect(ctx, cx - 220, cy - 60, 440, 65, 15);
+        ctx.fill();
+
+        // 4. 校名书法 (平滑字体)
+        ctx.shadowBlur = 0;
         ctx.textAlign = 'center';
-        ctx.font = `bold ${4.5 * SCALE}px serif`;
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fillText("广东工业大学", cx*SCALE + 2, (cy-16)*SCALE + 2);
-        ctx.fillStyle = COLORS.GOLD;
-        ctx.fillText("广东工业大学", cx*SCALE, (cy-16)*SCALE);
+        ctx.textBaseline = 'middle';
+        ctx.font = "900 48px 'Hiragino Sans GB', 'STHeiti', serif";
+        
+        // 文字立体感
+        ctx.fillStyle = "#eab308"; // 金色
+        ctx.fillText("广东工业大学", cx, cy - 25);
 
-        // 4. 校徽 (动态金属反光)
-        let flash = Math.abs(Math.sin(frame*0.05)) * 2;
-        drawP(cx-2.5, cy-32, 5, 5, COLORS.GATE_SHADOW);
-        drawP(cx-2, cy-31.5, 4, 4, COLORS.GOLD);
-        drawP(cx-1, cy-31, 1, 1, '#fff');
+        // 5. 动态校徽 (极简圆环)
+        const pulse = Math.sin(frame * 0.04) * 0.5 + 0.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 130, 28, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, 0.9)`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(177, 62, 83, ${0.2 + pulse * 0.5})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
 
-        // 5. 动态落叶粒子
-        leaves.forEach((l, i) => {
-            l.y += l.vy;
-            l.x += l.vx + Math.sin(frame*0.02 + i)*0.1;
-            if(l.y > 120) l.y = -10;
-            drawP(l.x, l.y, 1, 1, i%2===0 ? COLORS.LEAF_PARTICLE : COLORS.GRASS);
-        });
-
-        // 6. 人物：更细腻的 Stardew 风格
-        let px = 64 + Math.sin(frame*0.01)*8;
-        let py = 75;
-        // 呼吸动画
-        let breath = Math.sin(frame*0.1)*0.2;
-        drawP(px-1.5, py-8+breath, 3, 3, '#ffcd94'); // 脸
-        drawP(px-2, py-5+breath, 4, 1, '#3d4153');   // 头发
-        drawP(px-2.5, py-5, 5, 6, '#41a6f6');        // 衣服
-        drawP(px-2.5, py+1, 2, 4, '#29366f');        // 腿L
-        drawP(px+0.5, py+1, 2, 4, '#29366f');        // 腿R
-
-        // 7. 全局氛围：扫描线与颗粒感
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        for(let i=0; i<canvas.height; i+=SCALE*2) {
-            ctx.fillRect(0, i, canvas.width, 1);
+        // 6. 氛围装饰：流体粒子
+        for(let i=0; i<8; i++) {
+            let offset = (frame * 0.4 + i * 100) % h;
+            ctx.fillStyle = 'rgba(177, 62, 83, 0.03)';
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(frame * 0.01 + i) * 300, offset, 2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         requestAnimationFrame(render);
     }
+
+    // 圆角矩形辅助函数
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + width, y, x + width, y + height, radius);
+        ctx.arcTo(x + width, y + height, x, y + height, radius);
+        ctx.arcTo(x, y + height, x, y, radius);
+        ctx.arcTo(x, y, x + width, y, radius);
+        ctx.closePath();
+    }
+
     render();
 </script>
 </body>
