@@ -2,131 +2,158 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Masterpiece Cafe POV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Digital Cafe</title>
     <style>
-        body { margin: 0; background: #0c0a09; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: "Microsoft YaHei", sans-serif; }
-        
-        /* 1. 核心修复：添加 UI 覆盖层 */
-        .ui-layer {
-            position: fixed;
-            top: 25px;
-            left: 25px;
-            z-index: 100;
+        :root {
+            --primary: #6d4c41;
+            --accent: #d4a373;
+            --bg: #fafafa;
         }
 
-        /* 2. 模拟图片质感的像素按钮 */
-        .back-btn {
-            background: #a66a3a; /* 使用吧台同色系 */
+        body {
+            margin: 0;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #2d3436;
+        }
+
+        /* 毛玻璃容器 */
+        .cafe-card {
+            width: 90%;
+            max-width: 1000px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+            display: flex;
+            overflow: hidden;
+            animation: fadeIn 1s ease-out;
+        }
+
+        /* 左侧：氛围展示区 */
+        .display-area {
+            flex: 1.2;
+            background: url('https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=1000') center/cover;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 40px;
             color: white;
-            padding: 12px 20px;
-            border: 4px solid #6b3e23;
+        }
+
+        .display-area::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+        }
+
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 右侧：交互控制区 */
+        .control-panel {
+            flex: 1;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .back-nav {
             text-decoration: none;
-            font-weight: bold;
-            font-size: 14px;
-            image-rendering: pixelated;
+            color: var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+
+        .back-nav:hover { transform: translateX(-5px); }
+
+        .cafe-title {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(45deg, #6d4c41, #a1887f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-tag {
             display: inline-block;
-            box-shadow: inset -4px -4px 0px #6b3e23, 0 5px 15px rgba(0,0,0,0.5);
-            transition: transform 0.1s;
+            padding: 6px 16px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
         }
 
-        .back-btn:hover {
-            background: #d48d56;
-            transform: scale(1.05);
+        .btn-order {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(109, 76, 65, 0.2);
         }
 
-        .back-btn:active {
-            transform: scale(0.95);
-            box-shadow: inset 4px 4px 0px #6b3e23;
+        .btn-order:hover {
+            transform: translateY(-3px);
+            background: #5d4037;
+            box-shadow: 0 15px 30px rgba(109, 76, 65, 0.3);
         }
 
-        canvas { 
-            image-rendering: pixelated; 
-            box-shadow: 0 0 150px rgba(0,0,0,0.9);
-            background: #1a1412;
-            border: 4px solid #2d241f;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-<div class="ui-layer">
-    <a class="back-btn" href="index.html">⬅ 返回樱花树</a>
-</div>
+    <div class="cafe-card">
+        <div class="display-area">
+            <div class="content-overlay">
+                <h2 style="margin:0">午后阳光</h2>
+                <p style="opacity: 0.8">感受手冲咖啡与光影的慢节奏时光</p>
+            </div>
+        </div>
 
-<canvas id="masterCanvas" width="1000" height="1000"></canvas>
+        <div class="control-panel">
+            <div>
+                <a href="index.html" class="back-nav">← 返回樱花树</a>
+                <div style="margin-top: 40px;">
+                    <h1 class="cafe-title">Digital Cafe</h1>
+                    <span class="status-tag">● 正在营业中</span>
+                    <p style="color: #636e72; line-height: 1.6; margin-top: 20px;">
+                        这里不再有像素的棱角，只有极致的平滑与舒适。
+                        欢迎来到现代设计的领域。
+                    </p>
+                </div>
+            </div>
 
-<script>
-    const canvas = document.getElementById('masterCanvas');
-    const ctx = canvas.getContext('2d');
-    const S = 4; 
-    let frame = 0;
+            <button class="btn-order" onclick="alert('订单已确认，咖啡正在为您研磨中...')">
+                即刻品尝一杯
+            </button>
+        </div>
+    </div>
 
-    const COLORS = {
-        BG_DARK: '#1a1412',
-        TABLE: '#a66a3a', TABLE_LIGHT: '#d48d56', TABLE_SHADOW: '#6b3e23',
-        CUP: '#f2e8cf', CUP_SHADOW: '#bd9a7a',
-        COFFEE: '#2d1810',
-        STEAM: 'rgba(230, 230, 230, 0.4)'
-    };
-
-    function p(x, y, w, h, c) {
-        ctx.fillStyle = c;
-        ctx.fillRect(x * S, y * S, w * S, h * S);
-    }
-
-    function drawDither(x, y, w, h, c1, c2, density) {
-        for(let i=0; i<w; i++) {
-            for(let j=0; j<h; j++) {
-                p(x+i, y+j, 1, 1, Math.random() > density ? c1 : c2);
-            }
-        }
-    }
-
-    function render() {
-        frame++;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // 绘制背景与吧台 (同步图片质感)
-        p(0, 0, 250, 250, '#2d1b14');
-        p(0, 80, 250, 40, '#1a1412');
-        drawDither(0, 120, 250, 130, COLORS.TABLE, COLORS.TABLE_SHADOW, 0.8);
-
-        // 绘制咖啡杯 (POV 第一视角)
-        const cx = 125, cy = 180;
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.beginPath();
-        ctx.ellipse(cx*S, (cy+15)*S, 40*S, 10*S, 0, 0, Math.PI*2);
-        ctx.fill();
-
-        p(cx-35, cy+10, 70, 8, COLORS.CUP_SHADOW);
-        p(cx-32, cy+8, 64, 5, COLORS.CUP);
-        p(cx-22, cy-25, 44, 40, COLORS.CUP_SHADOW);
-        p(cx-20, cy-25, 40, 38, COLORS.CUP);
-        p(cx+18, cy-15, 10, 15, COLORS.CUP_SHADOW);
-        p(cx+20, cy-12, 6, 9, COLORS.BG_DARK);
-        p(cx-15, cy-20, 30, 5, COLORS.COFFEE);
-
-        // 动态蒸汽效果
-        for(let i=0; i<12; i++) {
-            let time = (frame * 0.02 + i * 0.5) % 2;
-            let sy = cy - 30 - (time * 60);
-            let sx = cx + Math.sin(frame * 0.05 + i) * 8;
-            let size = 2 + time * 4;
-            let alpha = (1 - time/2) * 0.5;
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            p(sx - size/2, sy, size, size, ctx.fillStyle);
-        }
-
-        // 环境光影滤镜
-        let grad = ctx.createRadialGradient(cx*S, cy*S, 20*S, cx*S, cy*S, 200*S);
-        grad.addColorStop(0, 'rgba(255, 200, 100, 0.2)');
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        requestAnimationFrame(render);
-    }
-    render();
-</script>
 </body>
 </html>
