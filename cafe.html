@@ -3,50 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Digital Cafe</title>
+    <title>Responsive Modern Cafe</title>
     <style>
         :root {
             --primary: #6d4c41;
             --accent: #d4a373;
-            --bg: #fafafa;
+            --glass: rgba(255, 255, 255, 0.75);
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #e0e0e0;
+            /* 动态背景图 */
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+                        url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=2000');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            color: #2d3436;
+            min-height: 100vh;
+            padding: 20px;
         }
 
-        /* 毛玻璃容器 */
+        /* 响应式容器：核心修改点 */
         .cafe-card {
-            width: 90%;
-            max-width: 1000px;
-            height: 600px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 1100px;
+            /* 高度随内容自适应，但在大屏设定最小高度 */
+            min-height: 70vh; 
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 24px;
             display: flex;
+            flex-direction: row; /* 横向布局 */
             overflow: hidden;
-            animation: fadeIn 1s ease-out;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        /* 左侧：氛围展示区 */
+        /* 移动端适配：当屏幕宽度小于 768px 时切换为纵向 */
+        @media (max-width: 768px) {
+            .cafe-card {
+                flex-direction: column;
+                margin-top: 40px;
+            }
+            .display-area {
+                height: 250px; /* 移动端固定图片高度 */
+            }
+            .control-panel {
+                padding: 30px !important;
+            }
+        }
+
         .display-area {
             flex: 1.2;
             background: url('https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=1000') center/cover;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
             padding: 40px;
+            display: flex;
+            align-items: flex-end;
             color: white;
         }
 
@@ -54,74 +75,58 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
         }
 
-        .content-overlay {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* 右侧：交互控制区 */
         .control-panel {
             flex: 1;
             padding: 50px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .back-nav {
             text-decoration: none;
             color: var(--primary);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            display: block;
         }
-
-        .back-nav:hover { transform: translateX(-5px); }
 
         .cafe-title {
-            font-size: 2.5rem;
+            font-size: clamp(2rem, 5vw, 3rem); /* 字体大小随屏幕缩放 */
             margin: 0;
-            background: linear-gradient(45deg, #6d4c41, #a1887f);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .status-tag {
-            display: inline-block;
-            padding: 6px 16px;
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-radius: 20px;
-            font-size: 14px;
-            margin-top: 10px;
+            color: var(--primary);
+            line-height: 1.1;
         }
 
         .btn-order {
+            width: 100%;
             background: var(--primary);
             color: white;
             border: none;
-            padding: 18px;
-            border-radius: 15px;
-            font-size: 18px;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 20px rgba(109, 76, 65, 0.2);
+            margin-top: 30px;
+            transition: all 0.3s;
         }
 
         .btn-order:hover {
-            transform: translateY(-3px);
-            background: #5d4037;
-            box-shadow: 0 15px 30px rgba(109, 76, 65, 0.3);
+            background: #3e2723;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -130,28 +135,22 @@
 
     <div class="cafe-card">
         <div class="display-area">
-            <div class="content-overlay">
-                <h2 style="margin:0">午后阳光</h2>
-                <p style="opacity: 0.8">感受手冲咖啡与光影的慢节奏时光</p>
+            <div style="position: relative; z-index: 1;">
+                <h3 style="margin:0; font-weight: 400;">Specialty Coffee</h3>
+                <h2 style="margin:0; font-size: 2rem;">每日精选</h2>
             </div>
         </div>
 
         <div class="control-panel">
             <div>
-                <a href="index.html" class="back-nav">← 返回樱花树</a>
-                <div style="margin-top: 40px;">
-                    <h1 class="cafe-title">Digital Cafe</h1>
-                    <span class="status-tag">● 正在营业中</span>
-                    <p style="color: #636e72; line-height: 1.6; margin-top: 20px;">
-                        这里不再有像素的棱角，只有极致的平滑与舒适。
-                        欢迎来到现代设计的领域。
-                    </p>
-                </div>
+                <a href="index.html" class="back-nav">← Back to Campus</a>
+                <h1 class="cafe-title">Modern<br>Minimalist</h1>
+                <p style="color: #555; line-height: 1.6; margin-top: 25px;">
+                    喝上一杯，为最好的你。
+                </p>
             </div>
 
-            <button class="btn-order" onclick="alert('订单已确认，咖啡正在为您研磨中...')">
-                即刻品尝一杯
-            </button>
+            <button class="btn-order">确认下单</button>
         </div>
     </div>
 
