@@ -3,277 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Honor & Legacy | GDUT 录取通知书</title>
+    <title>Honor & Legacy | GDUT</title>
     <style>
         :root {
             --gdut-red: #b13e53;
-            --gold-light: #f9d976;
-            --gold-dark: #d4af37;
-            --bg-dark: #050609; /* 更深邃的底色 */
-            --font-serif: 'Cinzel', 'STKaiti', 'KaiTi', serif;
-            --font-sans: 'Optima', 'PingFang SC', sans-serif;
+            --gdut-gold: #d9b36a;
+            --accent-blue: #6366f1;
+            --glass: rgba(255, 255, 255, 0.75);
         }
+
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
         body, html {
             margin: 0; padding: 0; height: 100%;
-            background: var(--bg-dark);
-            font-family: var(--font-sans);
-            color: #fff;
+            background: #fdfdfd;
+            overflow: hidden;
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
-            /* 背景：极度深邃的径向渐变，模拟宇宙深处 */
-            background: radial-gradient(circle at center, #10121a 0%, #000 100%);
+            font-family: 'PingFang SC', 'SF Pro Display', system-ui;
         }
 
-        /* 景深镜头：3D 透视 */
+        /* --- 动态光影场 --- */
+        .ambient-light {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        .light-blob {
+            position: absolute; border-radius: 50%;
+            filter: blur(120px);
+            mix-blend-mode: multiply;
+            animation: move linear infinite;
+            will-change: transform;
+        }
+
+        .l-1 { width: 800px; height: 800px; background: rgba(177, 62, 83, 0.12); top: -20%; right: -10%; animation-duration: 25s; }
+        .l-2 { width: 700px; height: 700px; background: rgba(99, 102, 241, 0.1); bottom: -15%; left: -5%; animation-duration: 20s; animation-direction: reverse; }
+        .l-3 { width: 600px; height: 600px; background: rgba(217, 179, 106, 0.15); top: 20%; left: 10%; animation-duration: 30s; }
+
+        @keyframes move {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(150px, 100px) scale(1.2) rotate(120deg); }
+            66% { transform: translate(-80px, 150px) scale(0.9) rotate(240deg); }
+            100% { transform: translate(0, 0) scale(1) rotate(360deg); }
+        }
+
+        /* --- 舞台容器 --- */
         .stage {
-            perspective: 2000px;
-            z-index: 10;
+            position: relative; z-index: 10;
+            perspective: 1500px;
             display: flex; flex-direction: column; align-items: center;
-            /* 入场动画：轻微放大和淡入 */
-            animation: stageEntrance 2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        /* 荣耀卡片：核心展示 */
+        /* --- 3D 浮雕通知书 --- */
         .honor-card {
-            width: 400px; height: 580px;
-            background: #fff;
-            border-radius: 15px;
-            /* 更沉重的阴影，增强悬浮感 */
-            box-shadow: 0 60px 120px rgba(0,0,0,0.9);
-            transform-style: preserve-3d;
-            transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s;
-            cursor: pointer;
-            overflow: hidden;
-            position: relative;
+            width: 380px; height: 560px;
+            background: var(--glass);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            border-radius: 40px;
+            /* 极其精细的复合阴影 */
+            box-shadow: 
+                0 0 0 1px rgba(255,255,255,0.8),
+                0 20px 50px rgba(0,0,0,0.06),
+                inset 0 0 20px rgba(255,255,255,0.5);
+            padding: 4px;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: cardPop 1s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        /* 悬停时的 3D 深度反馈 */
         .honor-card:hover {
-            transform: rotateX(4deg) rotateY(4deg) translateY(-15px);
-            /* 悬停时增加金色的环境光反馈 */
-            box-shadow: 0 80px 150px rgba(212, 175, 55, 0.15);
+            transform: translateY(-15px) rotateX(4deg) scale(1.02);
+            box-shadow: 0 40px 80px rgba(177, 62, 83, 0.12);
         }
 
-        /* 卡片光效：浮雕金边 */
-        .card-border {
-            position: absolute; inset: 18px;
-            border: 2px solid var(--gold-dark);
-            border-radius: 10px;
-            pointer-events: none;
-            /* 内部精细阴影，模拟凹陷质感 */
-            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.2);
+        /* 内层浮雕效果 */
+        .card-inner {
+            height: 100%; width: 100%;
+            border-radius: 36px;
+            border: 1px solid rgba(177, 62, 83, 0.08);
+            padding: 60px 40px;
+            display: flex; flex-direction: column;
+            position: relative;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 100%);
         }
 
-        /* 卡片内容排版 */
-        .card-content {
-            padding: 70px 45px;
-            color: #1a1a1a;
-            display: flex; flex-direction: column; align-items: center;
-            height: 100%;
-            position: relative; z-index: 1;
+        /* 文字动效序列 */
+        .reveal-text {
+            opacity: 0; transform: translateY(20px);
+            animation: reveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
-        /* 顶部校徽水印：极低透明度 */
-        .watermark {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%; opacity: 0.025;
-            pointer-events: none;
+        .header-section { animation-delay: 0.4s; text-align: center; }
+        .body-section { animation-delay: 0.7s; margin-top: 50px; flex: 1; }
+        .footer-section { animation-delay: 1s; }
+
+        .header-section h2 {
+            margin: 0; font-size: 2.2rem; letter-spacing: 12px;
+            background: linear-gradient(to bottom, #1e293b, var(--gdut-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
         }
 
-        .card-header {
-            text-align: center; margin-bottom: 50px;
-        }
-        .card-header h2 {
-            margin: 0; font-family: var(--font-serif);
-            font-size: 2.4rem; letter-spacing: 12px;
-            color: var(--gdut-red); font-weight: 900;
-            /* 文字轻微立体阴影 */
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
-        }
-        .card-header p {
-            margin: 8px 0 0 0; font-size: 0.9rem;
-            color: var(--gold-dark); letter-spacing: 4px;
-            text-transform: uppercase; font-weight: 600;
-        }
-
-        .card-body {
-            font-family: 'KaiTi', serif;
-            font-size: 1.25rem; line-height: 2.3; color: #333;
+        .body-section {
+            font-family: 'STKaiti', 'KaiTi', serif;
+            font-size: 1.2rem; line-height: 2.2; color: #334155;
             text-align: justify;
-            flex: 1;
         }
-        .card-body b { color: var(--gdut-red); font-weight: bold; }
+        
+        .body-section b { color: var(--gdut-red); border-bottom: 2px solid rgba(177,62,83,0.1); }
 
         .signature {
-            margin-top: auto; text-align: right; align-self: flex-end;
-            font-size: 1.05rem; color: #555;
-            font-family: 'KaiTi', serif;
+            border-top: 1px solid rgba(0,0,0,0.05); padding-top: 25px;
+            text-align: right; color: #64748b; font-family: 'KaiTi', serif;
         }
 
-        /* 底部操作区 */
+        /* --- 交互式功能键 --- */
         .actions {
-            margin-top: 60px; display: flex; gap: 25px;
-            /* 延迟滑入动画 */
-            animation: fadeInSlideUp 1s 1.2s both;
+            margin-top: 50px; display: flex; gap: 15px;
+            animation: reveal 0.8s 1.2s both;
         }
 
-        .btn-outline {
-            padding: 14px 40px; border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 30px; color: rgba(255,255,255,0.8); text-decoration: none;
-            font-size: 0.95rem; font-weight: 600;
-            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-            background: rgba(255,255,255,0.02);
-            letter-spacing: 1px;
-        }
-        .btn-outline:hover {
-            background: #fff; color: #000;
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(255,255,255,0.15);
+        .btn {
+            padding: 14px 32px; border-radius: 100px;
+            text-decoration: none; font-size: 0.9rem; font-weight: 700;
+            transition: 0.4s; display: flex; align-items: center;
+            background: white; color: #1e293b;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
         }
 
-        /* 全新高级 Canvas 背景：星河流动 */
-        #bg-canvas {
-            position: fixed; top: 0; left: 0; z-index: 0;
-            opacity: 0.6; /* 提高整体亮度 */
-            filter: blur(0.5px); /* 轻微融化感 */
+        .btn-primary { background: var(--gdut-red); color: white; border: none; }
+
+        .btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
         }
 
-        /* 动画定义 */
-        @keyframes stageEntrance {
-            from { opacity: 0; transform: scale(0.95) translateY(40px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes fadeInSlideUp {
-            from { opacity: 0; transform: translateY(20px); }
+        .btn-primary:hover { box-shadow: 0 15px 30px rgba(177, 62, 83, 0.3); }
+
+        /* --- 动画关键帧 --- */
+        @keyframes reveal {
             to { opacity: 1; transform: translateY(0); }
         }
-
+        @keyframes cardPop {
+            from { opacity: 0; transform: scale(0.8) translateY(100px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
     </style>
 </head>
 <body>
 
-    <canvas id="bg-canvas"></canvas>
+    <div class="ambient-light">
+        <div class="light-blob l-1"></div>
+        <div class="light-blob l-2"></div>
+        <div class="light-blob l-3"></div>
+    </div>
 
     <div class="stage">
         <div class="honor-card">
-            <div class="card-border"></div>
-            <img src="https://www.gdut.edu.cn/images/logo.png" alt="GDUT Watermark" class="watermark">
-            
-            <div class="card-content">
-                <div class="card-header">
+            <div class="card-inner">
+                <div class="header-section reveal-text">
+                    <div style="font-size: 10px; color: var(--gdut-gold); letter-spacing: 4px; margin-bottom: 10px;">ESTABLISHED 1958</div>
                     <h2>录取通知书</h2>
-                    <p>ADMISSION LETTER</p>
                 </div>
-                <div class="card-body">
+                
+                <div class="body-section reveal-text">
                     <p>亲爱的同学：</p>
-                    <p>祝贺你！经各省（区、市）招生委员会批准，你已被录取为我校 <b>2026级</b> 新生。星光不问赶路人，时光不负有心人。广东工业大学期待与你共同开启新篇章。</p>
+                    <p>祝贺你被我校录取为 <b>2026级</b>新生。星光不问赶路人，时光不负有心人，广东工业大学欢迎你的到来！</p>
                 </div>
-                <div class="signature">
-                    校长：邱学青<br>
-                    <small>二〇二六年七月</small>
+
+                <div class="footer-section reveal-text">
+                    <div class="signature">
+                        校长：邱学青<br>
+                        <span style="font-size: 12px; opacity: 0.6;">二〇二六年七月</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="actions">
-            <a href="index.html" class="btn-outline">返回数字大厅</a>
-            <a href="https://www.gdut.edu.cn/" class="btn-outline">官方迎新网</a>
+            <a href="index.html" class="btn">返回校园大厅</a>
+            <a href="https://www.gdut.edu.cn/" class="btn btn-primary" target="_blank">进入迎新系统</a>
         </div>
     </div>
 
-    <script>
-        // 高级 Canvas 背景：星河流动引擎
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        let width, height;
-
-        // 核心配置：粒子数量与流向
-        const config = {
-            particleCount: 120, // 增加粒子数量
-            baseSpeed: 0.2,
-            drift: 0.05, // 横向漂移
-            glow: 15 // 粒子光晕
-        };
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initParticles();
-        }
-
-        function initParticles() {
-            particles = [];
-            for (let i = 0; i < config.particleCount; i++) {
-                // 将粒子分组到不同的“星河”流中
-                const streamSeed = Math.random(); 
-                particles.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    size: Math.random() * 2.5 + 0.3, // 大小不等
-                    // 速度梯度：越小的粒子跑得越快，增强深度感
-                    speed: (Math.random() * 0.5 + config.baseSpeed) * (3 - Math.random() * 2), 
-                    // 初始透明度
-                    opacity: Math.random() * 0.6 + 0.1,
-                    // 独特的流溪特征
-                    stream: streamSeed,
-                    // 正弦波相位偏移，用于波浪流动
-                    phase: Math.random() * Math.PI * 2
-                });
-            }
-        }
-
-        function drawParticles() {
-            // 使用极低透明度的黑色填充，模拟深邃拖影
-            ctx.fillStyle = 'rgba(5, 6, 9, 0.15)'; 
-            ctx.fillRect(0, 0, width, height);
-
-            // 启用全局合成操作，让粒子叠加时亮度增加
-            ctx.globalCompositeOperation = 'lighter';
-
-            particles.forEach(p => {
-                // 计算流溪横向波浪位移
-                // 使用 Math.sin(p.y * 0.005 + frame*0.01 + p.phase) 创造波浪感
-                const waveOffset = Math.sin(p.y * 0.005 + p.phase) * (20 + p.stream * 30);
-                
-                // 绘制粒子光晕（通过多层绘制模拟）
-                ctx.shadowBlur = config.glow * p.size * 0.5;
-                ctx.shadowColor = `rgba(212, 175, 55, ${p.opacity * 0.8})`;
-                
-                // 绘制核心粒子
-                ctx.fillStyle = `rgba(255, 245, 200, ${p.opacity})`;
-                ctx.beginPath();
-                // 实际 X 坐标 = 基础 X + 波浪偏移 + 基础横向飘移
-                const drawX = p.x + waveOffset + p.stream * config.drift * (p.y * 0.1);
-                ctx.arc(drawX, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-
-                // 运动逻辑：向上流动
-                p.y -= p.speed;
-                // 正弦波相位随时间变化
-                p.phase += 0.003; 
-
-                // 边界检测：超出顶部后，重置到底部，并随机化 X
-                if (p.y < -20) {
-                    p.y = height + 20;
-                    p.x = Math.random() * width;
-                    p.opacity = Math.random() * 0.6 + 0.1;
-                }
-            });
-
-            // 重置合成操作
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.shadowBlur = 0; // 重置阴影
-
-            requestAnimationFrame(drawParticles);
-        }
-
-        window.addEventListener('resize', resize);
-        resize();
-        drawParticles();
-    }
-    </script>
 </body>
 </html>
