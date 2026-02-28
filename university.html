@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>GDUT Gate: Top-down Pixel Art</title>
+    <style>
+        body { margin: 0; background: #e0f2f1; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+        canvas { 
+            image-rendering: pixelated; 
+            box-shadow: 0 20px 80px rgba(0,0,0,0.15);
+            background: #f1f8e9; /* 浅色地面 */
+        }
+        /* 返回按键样式 */
+        .back-btn {
+            position: fixed; top: 20px; left: 20px;
+            background: #ef5350; color: white; padding: 12px 20px;
+            border: 4px solid #b71c1c; box-shadow: inset -4px -4px 0px 0px #b71c1c;
+            text-decoration: none; font-size: 14px; font-weight: bold;
+            image-rendering: pixelated; z-index: 100;
+        }
+        .back-btn:hover { background: #ff5252; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+<a class="back-btn" href="index.html">⬅ 返回樱花</a>
+
+<canvas id="uniCanvas" width="800" height="800"></canvas>
+
+<script>
+    const canvas = document.getElementById('uniCanvas');
+    const ctx = canvas.getContext('2d');
+    const SCALE = 8;
+    let frame = 0;
+
+    function drawPixelRect(x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * SCALE, y * SCALE, w * SCALE, h * SCALE);
+    }
+
+    // 绘制上帝视角下的像素文字
+    function drawPixelText(text, x, y, color) {
+        ctx.fillStyle = color;
+        ctx.font = `${5 * SCALE}px 'Microsoft YaHei', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x * SCALE, y * SCALE);
+    }
+
+    function render() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. 绘制地面 (校门前的广场)
+        ctx.fillStyle = '#b0bec5'; // 灰色水泥地
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 2. 绘制“广工”校门 (2.5D 轴测透视)
+        const gate = { x: 50, y: 30 };
+        // 柱子 (体现高度)
+        drawPixelRect(gate.x - 15, gate.y, 6, 20, '#546e7a'); 
+        drawPixelRect(gate.x + 9, gate.y, 6, 20, '#546e7a');
+        // 横梁 (校门牌匾)
+        drawPixelRect(gate.x - 20, gate.y - 10, 40, 10, '#455a64');
+        
+        // 牌匾上的“广工”二字
+        drawPixelText("广工", gate.x, gate.y - 3, '#fffde7');
+
+        // 3. 绘制上帝视角的小人 (黄色草帽+蓝色背带裤)
+        const man = { x: 50 + Math.sin(frame*0.02)*10, y: 65 };
+        
+        // 影子 (受阳光拉长)
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse((man.x + 3) * SCALE, (man.y + 4) * SCALE, 6 * SCALE, 3 * SCALE, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 头部与草帽 (关键上帝视角特征)
+        drawPixelRect(man.x - 2, man.y - 6, 4, 4, '#ffccbc');
+        ctx.fillStyle = '#eec900'; // 黄色草帽
+        ctx.beginPath(); ctx.arc(man.x * SCALE, (man.y - 5) * SCALE, 6 * SCALE, 0, Math.PI * 2); ctx.fill();
+
+        // 身体 (蓝色背带裤)
+        drawPixelRect(man.x - 3, man.y, 6, 8, '#3d5afe');
+        
+        // 腿部摆动 (行走动画)
+        let legSwing = Math.sin(frame * 0.1) * 2;
+        drawPixelRect(man.x - 2.5, man.y + 8, 2, 6 + legSwing, '#1a237e');
+        drawPixelRect(man.x + 0.5, man.y + 8, 2, 6 - legSwing, '#1a237e');
+
+        requestAnimationFrame(render);
+    }
+
+    render();
+</script>
+</body>
+</html>
