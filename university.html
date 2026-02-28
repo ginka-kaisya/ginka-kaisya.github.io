@@ -2,31 +2,48 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>GDUT Gate - Ultra Pixel Edition</title>
+    <title>GDUT Legacy: Masterpiece Edition</title>
     <style>
-        body { margin: 0; background: #cfd8dc; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { image-rendering: pixelated; box-shadow: 0 30px 100px rgba(0,0,0,0.3); background: #f1f8e9; border: 6px solid #455a64; }
-        .back-btn {
-            position: fixed; top: 20px; left: 20px;
-            background: #ef5350; color: white; padding: 12px 20px;
-            border: 4px solid #b71c1c; box-shadow: inset -4px -4px 0px 0px #b71c1c;
-            text-decoration: none; font-size: 14px; font-weight: bold;
-            image-rendering: pixelated; z-index: 100; cursor: pointer;
+        body { margin: 0; background: #1a1c2c; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { 
+            image-rendering: pixelated; 
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            background: #2a2d3e;
+            border: 4px solid #3d4153;
         }
+        .ui { position: fixed; top: 20px; left: 20px; z-index: 100; font-family: 'Courier New', Courier, monospace; }
+        .btn { background: #5d275d; color: #ffcd75; padding: 10px 20px; border: 3px solid #b13e53; text-decoration: none; font-weight: bold; image-rendering: pixelated; display: block; }
     </style>
 </head>
 <body>
 
-<a class="back-btn" href="index.html">⬅ 返回樱花</a>
-<canvas id="uniCanvas" width="800" height="800"></canvas>
+<div class="ui"><a class="btn" href="index.html">< 返回樱花林</a></div>
+<canvas id="masterCanvas" width="1024" height="1024"></canvas>
 
 <script>
-    const canvas = document.getElementById('uniCanvas');
+    const canvas = document.getElementById('masterCanvas');
     const ctx = canvas.getContext('2d');
     const SCALE = 8;
     let frame = 0;
 
-    function drawPixelRect(x, y, w, h, color) {
+    // 高级像素调色盘 (Hue Shifting)
+    const COLORS = {
+        SKY_GLOW: '#ffcd75', 
+        GATE_BODY: '#f4f4f4', GATE_SHADOW: '#3d4153',
+        RED_ACCENT: '#b13e53', RED_GLOW: '#ef7d57',
+        GRASS: '#38b764', GRASS_DARK: '#257179',
+        LEAF_PARTICLE: '#a7f070',
+        GOLD: '#feb543'
+    };
+
+    // 粒子系统：落叶
+    const leaves = Array.from({length: 20}, () => ({
+        x: Math.random() * 128, y: Math.random() * 128,
+        vx: Math.random() * 0.2 - 0.1, vy: Math.random() * 0.3 + 0.2,
+        r: Math.random() * Math.PI
+    }));
+
+    function drawP(x, y, w, h, color) {
         ctx.fillStyle = color;
         ctx.fillRect(x * SCALE, y * SCALE, w * SCALE, h * SCALE);
     }
@@ -35,76 +52,93 @@
         frame++;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. 广场地砖 (带网格纹理)
-        ctx.fillStyle = '#b0bec5';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        for(let i=0; i<100; i+=10) {
-            drawPixelRect(0, i, 100, 0.2, '#90a4ae');
-            drawPixelRect(i, 0, 0.2, 100, '#90a4ae');
+        // 1. 地面：仿古青砖铺装 (带纹理随机化)
+        for(let x=0; x<128; x+=4) {
+            for(let y=0; y<128; y+=2) {
+                let noise = Math.sin(x*y + frame*0.01);
+                drawP(x, y, 3.8, 1.8, noise > 0.5 ? '#29adff11' : '#1a1c2c');
+            }
         }
 
-        // 2. 校门后的林荫道 (进深感)
-        drawPixelRect(35, 0, 30, 30, '#78909c');
-        for(let i=0; i<5; i++) {
-            drawPixelRect(32, i*6, 3, 3, '#2e7d32'); // 左侧树木
-            drawPixelRect(65, i*6, 3, 3, '#2e7d32'); // 右侧树木
-        }
+        const cx = 64, cy = 40;
 
-        // 3. 广工正门大理石建筑
-        const gx = 50, gy = 35;
-        // 阴影
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        drawPixelRect(gx-28, gy+2, 56, 12, 'rgba(0,0,0,0.2)');
+        // 2. 环境：夕阳光影
+        let grad = ctx.createRadialGradient(cx*SCALE, cy*SCALE, 0, cx*SCALE, cy*SCALE, 80*SCALE);
+        grad.addColorStop(0, 'rgba(255, 205, 117, 0.15)');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
 
-        // 基座
-        drawPixelRect(gx-25, gy, 50, 10, '#eceff1'); 
-        drawPixelRect(gx-25, gy, 50, 1, '#ffffff'); // 高光
-
-        // 侧柱 (多层结构)
-        drawPixelRect(gx-26, gy-15, 6, 20, '#cfd8dc');
-        drawPixelRect(gx+20, gy-15, 6, 20, '#cfd8dc');
-        drawPixelRect(gx-24, gy-15, 2, 20, '#ffffff'); // 柱子反光
-
-        // 红色牌匾主体
-        drawPixelRect(gx-15, gy-12, 30, 8, '#c62828'); 
-        drawPixelRect(gx-14, gy-11, 28, 6, '#e53935'); // 牌匾亮部
-
-        // 校名 (模拟书法字体像素)
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${4 * SCALE}px serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText("广东工业大学", gx * SCALE, (gy - 7) * SCALE);
-
-        // 4. 环境装饰：花坛
-        for(let i=0; i<2; i++) {
-            let ox = i === 0 ? 15 : 75;
-            drawPixelRect(ox, 45, 10, 5, '#1b5e20'); // 绿植
-            drawPixelRect(ox+2, 46, 1, 1, '#f44336'); // 红花点缀
-            drawPixelRect(ox+7, 48, 1, 1, '#ffeb3b'); // 黄花点缀
-        }
-
-        // 5. 站在门口的小人 (细节增强)
-        const man = { x: 50 + Math.sin(frame*0.01)*5, y: 60 + Math.cos(frame*0.01)*2 };
-        
-        // 影子
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        // 3. 广工正门：核心结构 (Detail Layers)
+        // 远景基座投影
+        ctx.fillStyle = 'rgba(19, 20, 36, 0.4)';
         ctx.beginPath();
-        ctx.ellipse(man.x * SCALE, (man.y+2) * SCALE, 5 * SCALE, 2.5 * SCALE, 0, 0, Math.PI*2);
+        ctx.moveTo((cx-45)*SCALE, (cy+15)*SCALE);
+        ctx.lineTo((cx+70)*SCALE, (cy+45)*SCALE);
+        ctx.lineTo((cx+45)*SCALE, (cy+15)*SCALE);
         ctx.fill();
 
-        // 身体
-        drawPixelRect(man.x-2, man.y-8, 4, 4, '#ffccbc'); // 脸
-        drawPixelRect(man.x-3, man.y-4, 6, 8, '#039be5'); // 蓝衬衫
-        drawPixelRect(man.x-3, man.y+4, 2, 5, '#37474f'); // 裤管左
-        drawPixelRect(man.x+1, man.y+4, 2, 5, '#37474f'); // 裤管右
+        // 侧翼石墙
+        for(let side of [-1, 1]) {
+            let sx = cx + side * 35;
+            drawP(sx-10, cy-5, 20, 15, COLORS.GATE_SHADOW); // 厚度
+            drawP(sx-10, cy-12, 20, 10, COLORS.GATE_BODY);  // 顶面
+            // 缝隙细节
+            drawP(sx-5, cy-10, 0.5, 8, COLORS.GATE_SHADOW);
+        }
+
+        // 主门柱 (带有抗锯齿视觉处理的边缘高光)
+        drawP(cx-22, cy-25, 8, 45, COLORS.GATE_SHADOW);
+        drawP(cx+14, cy-25, 8, 45, COLORS.GATE_SHADOW);
+        drawP(cx-21.5, cy-25, 7, 44, COLORS.GATE_BODY); // 正面
+        drawP(cx+14.5, cy-25, 7, 44, COLORS.GATE_BODY);
+        drawP(cx-21.5, cy-25, 1, 44, '#ffffff'); // 极细高光边缘
+
+        // 标志性红色校名梁
+        drawP(cx-25, cy-22, 50, 8, COLORS.RED_ACCENT);
+        drawP(cx-24, cy-21.5, 48, 1, COLORS.RED_GLOW); // 顶部受光线
         
-        // 动作：像是在自拍
-        drawPixelRect(man.x+2, man.y-5, 3, 1, '#ffccbc'); // 手臂
-        drawPixelRect(man.x+5, man.y-6, 1.5, 2, '#263238'); // 手机
+        // 牌匾上的书法字体处理
+        ctx.textAlign = 'center';
+        ctx.font = `bold ${4.5 * SCALE}px serif`;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillText("广东工业大学", cx*SCALE + 2, (cy-16)*SCALE + 2);
+        ctx.fillStyle = COLORS.GOLD;
+        ctx.fillText("广东工业大学", cx*SCALE, (cy-16)*SCALE);
+
+        // 4. 校徽 (动态金属反光)
+        let flash = Math.abs(Math.sin(frame*0.05)) * 2;
+        drawP(cx-2.5, cy-32, 5, 5, COLORS.GATE_SHADOW);
+        drawP(cx-2, cy-31.5, 4, 4, COLORS.GOLD);
+        drawP(cx-1, cy-31, 1, 1, '#fff');
+
+        // 5. 动态落叶粒子
+        leaves.forEach((l, i) => {
+            l.y += l.vy;
+            l.x += l.vx + Math.sin(frame*0.02 + i)*0.1;
+            if(l.y > 120) l.y = -10;
+            drawP(l.x, l.y, 1, 1, i%2===0 ? COLORS.LEAF_PARTICLE : COLORS.GRASS);
+        });
+
+        // 6. 人物：更细腻的 Stardew 风格
+        let px = 64 + Math.sin(frame*0.01)*8;
+        let py = 75;
+        // 呼吸动画
+        let breath = Math.sin(frame*0.1)*0.2;
+        drawP(px-1.5, py-8+breath, 3, 3, '#ffcd94'); // 脸
+        drawP(px-2, py-5+breath, 4, 1, '#3d4153');   // 头发
+        drawP(px-2.5, py-5, 5, 6, '#41a6f6');        // 衣服
+        drawP(px-2.5, py+1, 2, 4, '#29366f');        // 腿L
+        drawP(px+0.5, py+1, 2, 4, '#29366f');        // 腿R
+
+        // 7. 全局氛围：扫描线与颗粒感
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        for(let i=0; i<canvas.height; i+=SCALE*2) {
+            ctx.fillRect(0, i, canvas.width, 1);
+        }
 
         requestAnimationFrame(render);
     }
-
     render();
 </script>
 </body>
