@@ -2,138 +2,130 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>GDUT Pixel Cafe: Ultimate Edition</title>
+    <title>Masterpiece Cafe POV</title>
     <style>
-        body { margin: 0; background: #1a1a1a; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { 
-            image-rendering: pixelated; 
-            box-shadow: 0 0 100px rgba(0,0,0,0.8);
-            background: #23120b; 
-        }
-        .ui-overlay {
+        body { margin: 0; background: #0c0a09; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: "Microsoft YaHei", sans-serif; }
+        
+        /* 1. 核心修复：添加 UI 覆盖层 */
+        .ui-layer {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 25px;
+            left: 25px;
             z-index: 100;
         }
+
+        /* 2. 模拟图片质感的像素按钮 */
         .back-btn {
-            background: #8d6e63;
+            background: #a66a3a; /* 使用吧台同色系 */
             color: white;
-            padding: 10px 20px;
-            border: 4px solid #4e342e;
+            padding: 12px 20px;
+            border: 4px solid #6b3e23;
             text-decoration: none;
             font-weight: bold;
+            font-size: 14px;
             image-rendering: pixelated;
+            display: inline-block;
+            box-shadow: inset -4px -4px 0px #6b3e23, 0 5px 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        .back-btn:hover {
+            background: #d48d56;
+            transform: scale(1.05);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            box-shadow: inset 4px 4px 0px #6b3e23;
+        }
+
+        canvas { 
+            image-rendering: pixelated; 
+            box-shadow: 0 0 150px rgba(0,0,0,0.9);
+            background: #1a1412;
+            border: 4px solid #2d241f;
         }
     </style>
 </head>
 <body>
 
-<div class="ui-overlay">
-    <a class="back-btn" href="index.html">⬅ 返回校门口</a>
+<div class="ui-layer">
+    <a class="back-btn" href="index.html">⬅ 返回樱花树</a>
 </div>
 
-<canvas id="cafeCanvas" width="1024" height="1024"></canvas>
+<canvas id="masterCanvas" width="1000" height="1000"></canvas>
 
 <script>
-    const canvas = document.getElementById('cafeCanvas');
+    const canvas = document.getElementById('masterCanvas');
     const ctx = canvas.getContext('2d');
-    
-    // 极致精度：SCALE为1，意味着1024x1024个真实像素点
-    const SCALE = 2; 
+    const S = 4; 
     let frame = 0;
 
-    // 调色盘
-    const C = {
-        WOOD: '#5d4037', WOOD_LIGHT: '#8d6e63', WOOD_DARK: '#3e2723',
-        STEAM: 'rgba(255, 255, 255, 0.3)',
-        COFFEE: '#21130d',
-        CUP: '#f5f5f5', CUP_SHADOW: '#d7ccc8',
-        LIGHT: 'rgba(255, 213, 79, 0.15)',
-        WALL: '#2c1e1a'
+    const COLORS = {
+        BG_DARK: '#1a1412',
+        TABLE: '#a66a3a', TABLE_LIGHT: '#d48d56', TABLE_SHADOW: '#6b3e23',
+        CUP: '#f2e8cf', CUP_SHADOW: '#bd9a7a',
+        COFFEE: '#2d1810',
+        STEAM: 'rgba(230, 230, 230, 0.4)'
     };
 
-    // 蒸汽粒子
-    const steamParticles = Array.from({length: 20}, () => ({
-        x: 0, y: 0, s: Math.random() * 2 + 1, vx: Math.random() * 0.5 - 0.25
-    }));
+    function p(x, y, w, h, c) {
+        ctx.fillStyle = c;
+        ctx.fillRect(x * S, y * S, w * S, h * S);
+    }
 
-    function drawP(x, y, w, h, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(Math.round(x * SCALE), Math.round(y * SCALE), Math.round(w * SCALE), Math.round(h * SCALE));
+    function drawDither(x, y, w, h, c1, c2, density) {
+        for(let i=0; i<w; i++) {
+            for(let j=0; j<h; j++) {
+                p(x+i, y+j, 1, 1, Math.random() > density ? c1 : c2);
+            }
+        }
     }
 
     function render() {
         frame++;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const center = { x: 256, y: 256 }; // 逻辑坐标
+        // 绘制背景与吧台 (同步图片质感)
+        p(0, 0, 250, 250, '#2d1b14');
+        p(0, 80, 250, 40, '#1a1412');
+        drawDither(0, 120, 250, 130, COLORS.TABLE, COLORS.TABLE_SHADOW, 0.8);
 
-        // 1. 墙面纹理 (微细像素噪点模拟墙皮)
-        for(let i=0; i<256; i+=2) {
-            for(let j=0; j<256; j+=2) {
-                let noise = Math.sin(i*j + frame*0.01) * 5;
-                drawP(i*2, j*2, 2, 2, `rgb(${44+noise}, ${30+noise}, ${26+noise})`);
-            }
+        // 绘制咖啡杯 (POV 第一视角)
+        const cx = 125, cy = 180;
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(cx*S, (cy+15)*S, 40*S, 10*S, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        p(cx-35, cy+10, 70, 8, COLORS.CUP_SHADOW);
+        p(cx-32, cy+8, 64, 5, COLORS.CUP);
+        p(cx-22, cy-25, 44, 40, COLORS.CUP_SHADOW);
+        p(cx-20, cy-25, 40, 38, COLORS.CUP);
+        p(cx+18, cy-15, 10, 15, COLORS.CUP_SHADOW);
+        p(cx+20, cy-12, 6, 9, COLORS.BG_DARK);
+        p(cx-15, cy-20, 30, 5, COLORS.COFFEE);
+
+        // 动态蒸汽效果
+        for(let i=0; i<12; i++) {
+            let time = (frame * 0.02 + i * 0.5) % 2;
+            let sy = cy - 30 - (time * 60);
+            let sx = cx + Math.sin(frame * 0.05 + i) * 8;
+            let size = 2 + time * 4;
+            let alpha = (1 - time/2) * 0.5;
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            p(sx - size/2, sy, size, size, ctx.fillStyle);
         }
 
-        // 2. 吧台绘制 (极致木纹)
-        for(let i=0; i<512; i+=1) {
-            let woodNoise = Math.sin(i * 0.1) * 10;
-            drawP(0, 350 + i, 512, 1, `rgb(${62+woodNoise}, ${39+woodNoise}, ${35+woodNoise})`);
-            // 绘制横向木质纹理
-            if(i % 20 === 0) drawP(0, 350+i, 512, 0.5, C.WOOD_DARK);
-        }
-
-        // 3. 咖啡杯 (极致边缘圆滑处理)
-        const cupPos = { x: 256, y: 320 };
-        // 杯托
-        drawP(cupPos.x - 40, cupPos.y + 25, 80, 5, C.CUP_SHADOW);
-        drawP(cupPos.x - 38, cupPos.y + 22, 76, 3, C.CUP);
-        // 杯身
-        drawP(cupPos.x - 25, cupPos.y - 20, 50, 45, C.CUP_SHADOW);
-        drawP(cupPos.x - 23, cupPos.y - 20, 46, 43, C.CUP);
-        // 杯内咖啡
-        drawP(cupPos.x - 18, cupPos.y - 15, 36, 5, C.COFFEE);
-        // 杯子高光 (极细线条)
-        drawP(cupPos.x - 20, cupPos.y - 15, 1.5, 30, '#ffffff');
-
-        // 4. 动态蒸汽粒子系统 (性能挑战点)
-        steamParticles.forEach((p, i) => {
-            if(frame % 2 === 0) p.y -= p.s;
-            p.x = cupPos.x + Math.sin(frame * 0.05 + i) * 10;
-            if(p.y < -100) p.y = 0;
-            
-            let alpha = 1 - (Math.abs(p.y) / 100);
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
-            // 绘制微小的像素烟雾团
-            drawP(p.x + p.vx, cupPos.y - 30 + p.y, 3, 3, ctx.fillStyle);
-            drawP(p.x + 2, cupPos.y - 35 + p.y, 2, 2, ctx.fillStyle);
-        });
-
-        // 5. 极致光影：暖黄射灯 (Radial Gradient)
-        let lightGrad = ctx.createRadialGradient(
-            center.x * SCALE, 100 * SCALE, 50 * SCALE, 
-            center.x * SCALE, 350 * SCALE, 400 * SCALE
-        );
-        lightGrad.addColorStop(0, 'rgba(255, 213, 79, 0.3)');
-        lightGrad.addColorStop(0.5, 'rgba(255, 143, 0, 0.1)');
-        lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
-        ctx.fillStyle = lightGrad;
+        // 环境光影滤镜
+        let grad = ctx.createRadialGradient(cx*S, cy*S, 20*S, cx*S, cy*S, 200*S);
+        grad.addColorStop(0, 'rgba(255, 200, 100, 0.2)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+        ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 6. 氛围细节：桌上的反光
-        drawP(cupPos.x - 60, cupPos.y + 40, 120, 1, 'rgba(255,255,255,0.1)');
-        
-        // 7. 动态扫描线 (模拟复古显示器感)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-        for(let i=0; i<canvas.height; i+=4) {
-            ctx.fillRect(0, i, canvas.width, 1);
-        }
 
         requestAnimationFrame(render);
     }
-
     render();
 </script>
 </body>
