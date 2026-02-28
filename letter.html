@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Honor & Legacy | GDUT 录取通知书</title>
+    <style>
+        :root {
+            --gdut-red: #b13e53;
+            --gold-gradient: linear-gradient(135deg, #d4af37 0%, #f9d976 50%, #d4af37 100%);
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background: #0a0a0b;
+            font-family: 'Optima', 'Cinzel', 'PingFang SC', serif;
+            color: #fff;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        /* 背景：动态金砂环境 */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; z-index: 0;
+            filter: blur(1px);
+        }
+
+        /* 核心容器：3D 透视 */
+        .stage {
+            perspective: 2000px;
+            z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* 高级信封容器 */
+        .envelope {
+            width: 380px; height: 260px;
+            background: var(--gdut-red);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .envelope:hover { transform: rotateX(10deg) scale(1.02); }
+
+        /* 信封翻盖 */
+        .flap {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #8e2d40;
+            clip-path: polygon(0 0, 50% 50%, 100% 0);
+            z-index: 3;
+            transform-origin: top;
+            transition: transform 0.8s 0.2s ease-in;
+        }
+
+        /* 内部信件（通知书） */
+        .letter {
+            position: absolute; bottom: 5px; left: 5%;
+            width: 90%; height: 90%;
+            background: #fff;
+            color: #1a1a1a;
+            padding: 40px 30px;
+            box-sizing: border-box;
+            transition: transform 1s 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 2;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid #ddd;
+        }
+
+        /* 激活状态：信封打开，信件弹出 */
+        .stage.active .flap { transform: rotateX(180deg); z-index: 1; }
+        .stage.active .letter { transform: translateY(-320px) scale(1.15); height: 520px; z-index: 10; cursor: default; }
+
+        /* 信件内部内容排版 */
+        .letter-header {
+            border-bottom: 2px solid var(--gdut-red);
+            margin-bottom: 30px; padding-bottom: 10px;
+            text-align: center;
+        }
+        .letter-header h2 { 
+            margin: 0; font-size: 1.8rem; letter-spacing: 8px; color: var(--gdut-red); 
+        }
+
+        .letter-body {
+            font-size: 1.1rem; line-height: 2; color: #333;
+            text-align: justify;
+        }
+
+        .signature {
+            margin-top: 50px; text-align: right;
+            font-style: italic; font-weight: bold;
+        }
+
+        /* 装饰性元素：火漆印 */
+        .seal {
+            position: absolute; bottom: 30%; left: 50%;
+            transform: translate(-50%, 50%);
+            width: 60px; height: 60px;
+            background: var(--gold-gradient);
+            border-radius: 50%;
+            z-index: 4;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 900; color: #854d0e; font-size: 12px;
+            transition: opacity 0.5s 0.3s;
+        }
+        .stage.active .seal { opacity: 0; pointer-events: none; }
+
+        /* 底部操作 */
+        .actions {
+            margin-top: 60px; opacity: 0;
+            transition: 1s 1.5s;
+            display: flex; gap: 20px;
+        }
+        .stage.active .actions { opacity: 1; }
+
+        .btn-outline {
+            padding: 12px 30px; border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 30px; color: #fff; text-decoration: none;
+            font-size: 0.9rem; transition: 0.3s; background: rgba(255,255,255,0.05);
+        }
+        .btn-outline:hover { background: #fff; color: #000; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="stage" id="mainStage">
+        <div class="envelope" onclick="this.parentElement.classList.toggle('active')">
+            <div class="flap"></div>
+            <div class="seal">GDUT</div>
+            
+            <div class="letter">
+                <div class="letter-header">
+                    <h2>录取通知书</h2>
+                </div>
+                <div class="letter-body">
+                    <p>亲爱的同学：</p>
+                    <p>经各省（区、市）招生委员会批准，你已被录取为我校 <b>2026级</b> 本科新生。期待与你在美丽的广工校园相遇，共同续写奋斗篇章。</p>
+                    <div class="signature">
+                        校长：邱学青<br>
+                        <small>二〇二六年七月</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="index.html" class="btn-outline">返回数字大厅</a>
+            <a href="https://www.gdut.edu.cn/" class="btn-outline">官方迎新网</a>
+        </div>
+    </div>
+
+    <script>
+        // 背景金砂动画
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    speed: Math.random() * 0.5 + 0.1,
+                    o: Math.random()
+                });
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 11, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                ctx.fillStyle = `rgba(212, 175, 55, ${p.o})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                p.y -= p.speed;
+                if (p.y < 0) p.y = canvas.height;
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', init);
+        init();
+        animate();
+
+        // 自动入场动效
+        setTimeout(() => {
+            // 这里可以添加初始的轻微晃动提醒点击
+        }, 1000);
+    </script>
+</body>
+</html>
