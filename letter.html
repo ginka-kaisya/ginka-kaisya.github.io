@@ -9,7 +9,7 @@
             --gdut-red: #b13e53;
             --gold-light: #f9d976;
             --gold-dark: #d4af37;
-            --bg-dark: #0a0b10;
+            --bg-dark: #050609; /* 更深邃的底色 */
             --font-serif: 'Cinzel', 'STKaiti', 'KaiTi', serif;
             --font-sans: 'Optima', 'PingFang SC', sans-serif;
         }
@@ -21,8 +21,8 @@
             color: #fff;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
-            /* 背景：深邃的径向渐变，模拟光晕 */
-            background: radial-gradient(circle at center, #1a1c2c 0%, #000 100%);
+            /* 背景：极度深邃的径向渐变，模拟宇宙深处 */
+            background: radial-gradient(circle at center, #10121a 0%, #000 100%);
         }
 
         /* 景深镜头：3D 透视 */
@@ -30,7 +30,8 @@
             perspective: 2000px;
             z-index: 10;
             display: flex; flex-direction: column; align-items: center;
-            animation: stageEntrance 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            /* 入场动画：轻微放大和淡入 */
+            animation: stageEntrance 2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         /* 荣耀卡片：核心展示 */
@@ -38,104 +39,115 @@
             width: 400px; height: 580px;
             background: #fff;
             border-radius: 15px;
-            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            /* 更沉重的阴影，增强悬浮感 */
+            box-shadow: 0 60px 120px rgba(0,0,0,0.9);
             transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s;
+            transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s;
             cursor: pointer;
             overflow: hidden;
             position: relative;
         }
 
+        /* 悬停时的 3D 深度反馈 */
         .honor-card:hover {
-            transform: rotateX(5deg) rotateY(5deg) translateY(-10px);
-            box-shadow: 0 70px 120px rgba(212, 175, 55, 0.2);
+            transform: rotateX(4deg) rotateY(4deg) translateY(-15px);
+            /* 悬停时增加金色的环境光反馈 */
+            box-shadow: 0 80px 150px rgba(212, 175, 55, 0.15);
         }
 
         /* 卡片光效：浮雕金边 */
         .card-border {
-            position: absolute; inset: 15px;
+            position: absolute; inset: 18px;
             border: 2px solid var(--gold-dark);
             border-radius: 10px;
             pointer-events: none;
-            box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.3);
+            /* 内部精细阴影，模拟凹陷质感 */
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
         /* 卡片内容排版 */
         .card-content {
-            padding: 60px 40px;
+            padding: 70px 45px;
             color: #1a1a1a;
             display: flex; flex-direction: column; align-items: center;
             height: 100%;
             position: relative; z-index: 1;
         }
 
-        /* 顶部校徽水印 */
+        /* 顶部校徽水印：极低透明度 */
         .watermark {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%; opacity: 0.03;
+            width: 85%; opacity: 0.025;
             pointer-events: none;
         }
 
         .card-header {
-            text-align: center; margin-bottom: 40px;
+            text-align: center; margin-bottom: 50px;
         }
         .card-header h2 {
             margin: 0; font-family: var(--font-serif);
-            font-size: 2.2rem; letter-spacing: 10px;
+            font-size: 2.4rem; letter-spacing: 12px;
             color: var(--gdut-red); font-weight: 900;
+            /* 文字轻微立体阴影 */
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
         }
         .card-header p {
-            margin: 5px 0 0 0; font-size: 0.9rem;
-            color: var(--gold-dark); letter-spacing: 3px;
-            text-transform: uppercase;
+            margin: 8px 0 0 0; font-size: 0.9rem;
+            color: var(--gold-dark); letter-spacing: 4px;
+            text-transform: uppercase; font-weight: 600;
         }
 
         .card-body {
             font-family: 'KaiTi', serif;
-            font-size: 1.2rem; line-height: 2.2; color: #333;
+            font-size: 1.25rem; line-height: 2.3; color: #333;
             text-align: justify;
             flex: 1;
         }
-        .card-body b { color: var(--gdut-red); }
+        .card-body b { color: var(--gdut-red); font-weight: bold; }
 
         .signature {
             margin-top: auto; text-align: right; align-self: flex-end;
-            font-size: 1rem; color: #555;
-        }
-
-        /* 动态背景：粒子光沙 */
-        #bg-canvas {
-            position: fixed; top: 0; left: 0; z-index: 0;
-            opacity: 0.4; filter: blur(1px);
+            font-size: 1.05rem; color: #555;
+            font-family: 'KaiTi', serif;
         }
 
         /* 底部操作区 */
         .actions {
-            margin-top: 50px; display: flex; gap: 20px;
-            animation: fadeIn 1s 1s both;
+            margin-top: 60px; display: flex; gap: 25px;
+            /* 延迟滑入动画 */
+            animation: fadeInSlideUp 1s 1.2s both;
         }
 
         .btn-outline {
-            padding: 12px 35px; border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 30px; color: #fff; text-decoration: none;
-            font-size: 0.9rem; font-weight: 600;
-            transition: all 0.3s; background: rgba(255,255,255,0.03);
+            padding: 14px 40px; border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 30px; color: rgba(255,255,255,0.8); text-decoration: none;
+            font-size: 0.95rem; font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            background: rgba(255,255,255,0.02);
             letter-spacing: 1px;
         }
         .btn-outline:hover {
             background: #fff; color: #000;
-            box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(255,255,255,0.15);
         }
 
-        /* 入场动画 */
+        /* 全新高级 Canvas 背景：星河流动 */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; z-index: 0;
+            opacity: 0.6; /* 提高整体亮度 */
+            filter: blur(0.5px); /* 轻微融化感 */
+        }
+
+        /* 动画定义 */
         @keyframes stageEntrance {
-            from { opacity: 0; transform: scale(0.9) translateY(50px); }
+            from { opacity: 0; transform: scale(0.95) translateY(40px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes fadeInSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
     </style>
@@ -156,7 +168,7 @@
                 </div>
                 <div class="card-body">
                     <p>亲爱的同学：</p>
-                    <p>祝贺你！经各省（区、市）招生委员会批准，你已被录取为我校 <b>2026级</b> 本科新生。星光不问赶路人，时光不负有心人。广东工业大学期待与你共同开启新篇章。</p>
+                    <p>祝贺你！经各省（区、市）招生委员会批准，你已被录取为我校 <b>2026级</b> 新生。星光不问赶路人，时光不负有心人。广东工业大学期待与你共同开启新篇章。</p>
                 </div>
                 <div class="signature">
                     校长：邱学青<br>
@@ -172,43 +184,96 @@
     </div>
 
     <script>
-        // 背景粒子动画
+        // 高级 Canvas 背景：星河流动引擎
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
+        let width, height;
 
-        function init() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // 核心配置：粒子数量与流向
+        const config = {
+            particleCount: 120, // 增加粒子数量
+            baseSpeed: 0.2,
+            drift: 0.05, // 横向漂移
+            glow: 15 // 粒子光晕
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        function initParticles() {
             particles = [];
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < config.particleCount; i++) {
+                // 将粒子分组到不同的“星河”流中
+                const streamSeed = Math.random(); 
                 particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 2.5 + 0.5,
-                    speed: Math.random() * 0.3 + 0.1,
-                    o: Math.random() * 0.8
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 2.5 + 0.3, // 大小不等
+                    // 速度梯度：越小的粒子跑得越快，增强深度感
+                    speed: (Math.random() * 0.5 + config.baseSpeed) * (3 - Math.random() * 2), 
+                    // 初始透明度
+                    opacity: Math.random() * 0.6 + 0.1,
+                    // 独特的流溪特征
+                    stream: streamSeed,
+                    // 正弦波相位偏移，用于波浪流动
+                    phase: Math.random() * Math.PI * 2
                 });
             }
         }
 
-        function animate() {
-            ctx.fillStyle = 'rgba(10, 11, 16, 0.1)'; // 增加拖影
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function drawParticles() {
+            // 使用极低透明度的黑色填充，模拟深邃拖影
+            ctx.fillStyle = 'rgba(5, 6, 9, 0.15)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            // 启用全局合成操作，让粒子叠加时亮度增加
+            ctx.globalCompositeOperation = 'lighter';
+
             particles.forEach(p => {
-                ctx.fillStyle = `rgba(212, 175, 55, ${p.o})`;
+                // 计算流溪横向波浪位移
+                // 使用 Math.sin(p.y * 0.005 + frame*0.01 + p.phase) 创造波浪感
+                const waveOffset = Math.sin(p.y * 0.005 + p.phase) * (20 + p.stream * 30);
+                
+                // 绘制粒子光晕（通过多层绘制模拟）
+                ctx.shadowBlur = config.glow * p.size * 0.5;
+                ctx.shadowColor = `rgba(212, 175, 55, ${p.opacity * 0.8})`;
+                
+                // 绘制核心粒子
+                ctx.fillStyle = `rgba(255, 245, 200, ${p.opacity})`;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                // 实际 X 坐标 = 基础 X + 波浪偏移 + 基础横向飘移
+                const drawX = p.x + waveOffset + p.stream * config.drift * (p.y * 0.1);
+                ctx.arc(drawX, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
+
+                // 运动逻辑：向上流动
                 p.y -= p.speed;
-                if (p.y < 0) p.y = canvas.height;
+                // 正弦波相位随时间变化
+                p.phase += 0.003; 
+
+                // 边界检测：超出顶部后，重置到底部，并随机化 X
+                if (p.y < -20) {
+                    p.y = height + 20;
+                    p.x = Math.random() * width;
+                    p.opacity = Math.random() * 0.6 + 0.1;
+                }
             });
-            requestAnimationFrame(animate);
+
+            // 重置合成操作
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.shadowBlur = 0; // 重置阴影
+
+            requestAnimationFrame(drawParticles);
         }
 
-        window.addEventListener('resize', init);
-        init();
-        animate();
+        window.addEventListener('resize', resize);
+        resize();
+        drawParticles();
+    }
     </script>
 </body>
 </html>
