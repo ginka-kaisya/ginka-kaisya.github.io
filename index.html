@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Stardew Sakura: Daylight Hanging</title>
+    <style>
+        body { margin: 0; background: #a5d6a7; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { 
+            image-rendering: pixelated;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.1);
+            background: #e8f5e9; /* 浅绿草地 */
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="dayCanvas" width="800" height="800"></canvas>
+
+<script>
+    const canvas = document.getElementById('dayCanvas');
+    const ctx = canvas.getContext('2d');
+    const SCALE = 8;
+    let frame = 0;
+
+    // 白天樱花调色盘
+    const SAKURA_COLORS = ['#ffdae0', '#ffb7c5', '#ffffff', '#fce4ec'];
+
+    // 初始化花瓣粒子 (白天风力稍大，水平位移增加)
+    const petals = Array.from({length: 45}, () => ({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        s: Math.random() * 0.4 + 0.3, 
+        vx: Math.random() * 0.5 + 0.2, // 横向风速
+        r: Math.random() * Math.PI
+    }));
+
+    function drawPixelRect(x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * SCALE, y * SCALE, w * SCALE, h * SCALE);
+    }
+
+    function render() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. 绘制明亮的春日草地
+        ctx.fillStyle = '#9ccc65'; // 主草地绿
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 增加草地杂色纹理
+        for(let i=0; i<80; i++) {
+            let tx = (i * 29) % 100;
+            let ty = (i * 47) % 100;
+            drawPixelRect(tx, ty, 1, 1, '#aed581'); 
+        }
+
+        // 2. 物理参数
+        let swing = Math.sin(frame * 0.03) * 0.15; // 悠闲的摆动
+        const base = { x: 50, y: 70 };
+        const hook = { x: base.x + 15, y: base.y - 40 };
+
+        // 3. 强烈的白昼投影 (因为是上帝视角，投影稍微拉长)
+        ctx.fillStyle = 'rgba(46, 64, 32, 0.25)';
+        ctx.beginPath();
+        // 投影随摆动大幅度偏移，体现高度
+        let shadowOffsetX = 12 + swing * 25; 
+        let shadowOffsetY = 5;
+        ctx.ellipse((hook.x + shadowOffsetX) * SCALE, (base.y + shadowOffsetY) * SCALE, 8 * SCALE, 4 * SCALE, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. 绘制路灯 (白天呈现深青铜色)
+        drawPixelRect(base.x - 4, base.y - 2, 8, 3, '#2d3436'); // 基座
+        ctx.strokeStyle = '#3d3d3d';
+        ctx.lineWidth = SCALE * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(base.x * SCALE, base.y * SCALE);
+        ctx.lineTo(base.x * SCALE, (base.y - 38) * SCALE); // 立柱
+        ctx.quadraticCurveTo(base.x * SCALE, hook.y * SCALE, hook.x * SCALE, hook.y * SCALE); // 弧形
+        ctx.stroke();
+
+        // 灯头 (熄灭状态，但带玻璃质感)
+        drawPixelRect(hook.x - 3, hook.y - 1, 6, 8, '#444');
+        drawPixelRect(hook.x - 2, hook.y + 1, 4, 5, '#e0f7fa'); // 玻璃反光
+
+        // 5. 绘制挂着的小人 (色彩鲜艳以契合白天)
+        ctx.save();
+        ctx.translate(hook.x * SCALE, (hook.y + 1) * SCALE);
+        ctx.rotate(swing);
+        
+        drawPixelRect(-0.5, 0, 1, 4, '#2d3436'); // 绳索
+        drawPixelRect(-3, 4, 6, 6, '#ffccbc');   // 头部
+        drawPixelRect(-4, 10, 8, 12, '#ef5350'); // 鲜艳的红色上衣
+        
+        // 腿部物理延迟
+        let legSwing = Math.sin(frame * 0.03 - 0.6) * 0.1;
+        ctx.translate(0, 22 * SCALE);
+        ctx.rotate(legSwing);
+        drawPixelRect(-3.5, 0, 3, 9, '#5c6bc0'); // 蓝色裤子
+        drawPixelRect(0.5, 0, 3, 9, '#5c6bc0');
+        ctx.restore();
+
+        // 6. 樱花粒子系统 (带阴影效果)
+        petals.forEach((p, i) => {
+            p.y += p.s;
+            p.x += p.vx + Math.sin(frame * 0.01 + i) * 0.2;
+            if(p.y > 105) p.y = -5;
+            if(p.x > 105) p.x = -5;
+            
+            // 绘制花瓣投影
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            ctx.fillRect((p.x + 2) * SCALE, (p.y + 2) * SCALE, 1 * SCALE, 1 * SCALE);
+            
+            // 绘制花瓣本体
+            ctx.fillStyle = SAKURA_COLORS[i % 4];
+            ctx.save();
+            ctx.translate(p.x * SCALE, p.y * SCALE);
+            ctx.rotate(p.r + frame * 0.02);
+            ctx.fillRect(-0.4 * SCALE, -0.4 * SCALE, 1.2 * SCALE, 0.8 * SCALE);
+            ctx.restore();
+        });
+
+        // 7. 全局光影：明亮的顶层日光滤镜
+        let sunGlow = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        sunGlow.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+        sunGlow.addColorStop(1, 'rgba(255, 235, 59, 0.05)');
+        ctx.fillStyle = sunGlow;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        requestAnimationFrame(render);
+    }
+
+    render();
+</script>
+</body>
+</html>
