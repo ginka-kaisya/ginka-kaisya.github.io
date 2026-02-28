@@ -22,6 +22,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
             color: #37474f;
         }
 
@@ -32,22 +33,24 @@
             gap: 25px;
             padding: 20px;
             animation: fadeIn 1.2s ease-out;
+            z-index: 10;
         }
 
         @media (max-width: 900px) {
             .portal-container { flex-direction: column; align-items: center; }
-            .canvas-side { width: 100% !important; height: 300px !important; }
+            .canvas-side { width: 100% !important; height: 350px !important; }
         }
 
-        /* 装饰窗容器 */
+        /* 左侧装饰窗 */
         .canvas-side {
-            width: 400px;
-            height: 550px;
+            width: 420px;
+            height: 600px;
             background: #fff;
-            border-radius: 35px;
+            border-radius: 40px;
             overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
-            border: 10px solid white;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.12);
+            border: 12px solid white;
+            position: relative;
         }
 
         canvas {
@@ -60,47 +63,68 @@
         .content-side {
             flex: 1;
             background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 35px;
-            padding: 40px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 40px;
+            padding: 50px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.5);
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
         }
 
-        .header h1 { font-size: 2.8rem; margin: 0; color: #2e7d32; }
-        .header p { line-height: 1.8; color: #546e7a; }
+        .header h1 { 
+            font-size: 3rem; 
+            margin: 0; 
+            color: #2e7d32; 
+            letter-spacing: -1px;
+        }
+        
+        .header p { 
+            line-height: 1.8; 
+            color: #546e7a; 
+            font-size: 1.1rem;
+            margin-top: 20px;
+        }
 
         .nav-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 30px;
+            gap: 18px;
+            margin-top: 40px;
         }
 
         .nav-card {
-            padding: 20px;
-            border-radius: 20px;
+            padding: 24px;
+            border-radius: 24px;
             text-decoration: none;
             color: white;
-            font-weight: 600;
-            transition: all 0.3s;
+            font-weight: 700;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
         }
 
-        .nav-card:hover { transform: translateY(-5px); filter: brightness(1.1); }
+        .nav-card:hover { 
+            transform: translateY(-8px) scale(1.02); 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
         
         .cafe-link { background: #90a4ae; }
         .contact-link { background: #ff8a80; }
         .campus-link { background: #81c784; grid-column: span 2; }
 
-        .nav-card span { font-size: 0.8rem; opacity: 0.9; font-weight: 400; margin-top: 5px; }
+        .nav-card span { 
+            font-size: 0.85rem; 
+            opacity: 0.9; 
+            font-weight: 400; 
+            margin-top: 8px; 
+        }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -109,19 +133,19 @@
 
     <div class="portal-container">
         <div class="canvas-side">
-            <canvas id="dayCanvas" width="400" height="550"></canvas>
+            <canvas id="dayCanvas" width="420" height="600"></canvas>
         </div>
 
         <div class="content-side">
             <div class="header">
                 <h1>晴空樱花</h1>
-                <p>愿每一位广工学子的心头都挂着一个晴天娃娃。即使在忙碌的学期里，也能在这里找到一片永恒的宁静与花海。</p>
+                <p>这里是像素广工的宁静角落。远处的教学楼在晨雾中若隐若现，晴天娃娃正为你守护每一份好心情。</p>
             </div>
 
             <div class="nav-grid">
-                <a href="cafe.html" class="nav-card cafe-link">☕ 躲进咖啡厅<span>午后光影体验</span></a>
-                <a href="mailto:contact@gdut.edu" class="nav-card contact-link">📩 留言板<span>分享你的心情</span></a>
-                <a href="university.html" class="nav-card campus-link">🏫 漫步校园<span>探索 2K 级虚拟广工</span></a>
+                <a href="cafe.html" class="nav-card cafe-link">☕ 躲进咖啡厅<span>体验 2K 级光影午后</span></a>
+                <a href="mailto:contact@gdut.edu" class="nav-card contact-link">📩 商务合作<span>与我们取得联系</span></a>
+                <a href="university.html" class="nav-card campus-link">🏫 漫步校园<span>探索 1:1 还原的现代广工正门</span></a>
             </div>
         </div>
     </div>
@@ -132,79 +156,90 @@
     const S = 6; 
     let frame = 0;
 
-    // 樱花配置
-    const petals = Array.from({length: 40}, () => ({
+    // 1. 初始化樱花粒子
+    const petals = Array.from({length: 35}, () => ({
         x: Math.random() * 100,
         y: Math.random() * 100,
-        s: Math.random() * 0.3 + 0.2, // 飘落速度
-        vx: Math.random() * 0.4 + 0.1, // 横向风速
+        s: Math.random() * 0.3 + 0.2,
+        vx: Math.random() * 0.3 + 0.1,
         r: Math.random() * Math.PI
     }));
 
+    // 2. 初始化云朵位置
+    const clouds = [
+        { x: 10, y: 25, scale: 1.2, speed: 0.04 },
+        { x: 65, y: 45, scale: 0.8, speed: 0.06 }
+    ];
+
     function p(x, y, w, h, c) {
         ctx.fillStyle = c;
-        ctx.fillRect(x * S, y * S, w * S, h * S);
+        ctx.fillRect(Math.floor(x * S), Math.floor(y * S), Math.floor(w * S), Math.floor(h * S));
     }
 
-function render() {
+    function render() {
         frame++;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 背景：清透天蓝色
+        // --- A. 基础背景层 ---
         ctx.fillStyle = '#e3f2fd';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 0. 绘制固定点：木质屋檐 (Eaves)
-        // 顶部横梁
-        p(0, 0, 100, 8, '#5d4037'); // 深色木头
-        p(0, 6, 100, 2, '#3e2723'); // 木头底部阴影
-        // 增加一点瓦片感
-        for(let i=0; i<10; i++) {
-            p(i*12, 0, 8, 2, '#4e342e');
-        }
+        // --- B. 远景层：校园建筑剪影 ---
+        const bColor = '#d1e9ff';
+        // 远方教学楼
+        p(55, 65, 25, 35, bColor);
+        p(60, 60, 10, 5, bColor);
+        // 远方行政楼
+        p(15, 75, 30, 25, bColor);
+        p(20, 72, 15, 3, bColor);
 
-        // 1. 绘制晴天娃娃 (Teru Teru Bozu)
-        let swing = Math.sin(frame * 0.04) * 0.12; // 稍微减小摆动，显得更有重量
-        let hX = 33, hY = 8; // 悬挂点改为从屋檐底部开始
+        // --- C. 中景层：流云 ---
+        clouds.forEach(cloud => {
+            cloud.x = (cloud.x + cloud.speed) % 120;
+            let cx = cloud.x - 20;
+            let cy = cloud.y;
+            let sc = cloud.scale;
+            p(cx, cy, 12 * sc, 4 * sc, 'rgba(255, 255, 255, 0.6)');
+            p(cx + 2*sc, cy - 2*sc, 8 * sc, 2 * sc, 'rgba(255, 255, 255, 0.6)');
+        });
 
+        // --- D. 悬挂层：屋檐与娃娃 ---
+        // 屋檐
+        p(0, 0, 100, 8, '#5d4037'); 
+        p(0, 7, 100, 1.5, '#3e2723'); 
+        for(let i=0; i<10; i++) p(i*12, 0, 8, 2, '#4e342e');
+
+        // 晴天娃娃
+        let swing = Math.sin(frame * 0.035) * 0.12;
         ctx.save();
-        ctx.translate(hX * S, hY * S);
+        ctx.translate(35 * S, 8 * S);
         ctx.rotate(swing);
-
-        // 核心修改：绳子现在紧紧系在屋檐(hY=8)上
-        p(-0.5, 0, 1, 15, '#90a4ae'); // 绳子
+        p(-0.4, 0, 0.8, 15, '#90a4ae'); // 绳子
         
-        // 娃娃主体向下偏移 15 个单位
-        ctx.translate(0, 15 * S); 
-        
-        // 头部
-        p(-4, 0, 8, 8, '#ffffff');
+        ctx.translate(0, 15 * S);
+        p(-4, 0, 8, 8, '#ffffff'); // 头
         p(-3, -1, 6, 1, '#ffffff');
         p(-3, 8, 6, 1, '#ffffff');
-        // 眼睛
-        p(-2.5, 3, 1, 1, '#37474f');
-        p(1.5, 3, 1, 1, '#37474f');
-        // 红丝带
-        p(-4, 8, 8, 1, '#ff5252');
-        // 身体/布料下摆
-        p(-5, 9, 10, 8, '#ffffff');
-        // 下摆动态褶皱
+        p(-2, 3, 1, 1, '#37474f'); // 眼
+        p(1, 3, 1, 1, '#37474f');
+        p(-3, 5, 1, 0.5, 'rgba(255, 182, 193, 0.6)'); // 腮红
+        p(2, 5, 1, 0.5, 'rgba(255, 182, 193, 0.6)');
+        p(-4, 8, 8, 1, '#ff5252'); // 丝带
+        p(-5, 9, 10, 9, '#ffffff'); // 身体
+        // 下摆动感
         for(let i=0; i<3; i++) {
-            let offset = Math.sin(frame * 0.1 + i) * 1.5;
-            p(-5 + i*4, 17 + offset, 2, 2, '#ffffff');
+            let dy = Math.sin(frame * 0.1 + i) * 1.5;
+            p(-5 + i*4, 18 + dy, 2, 2, '#ffffff');
         }
         ctx.restore();
 
-        // 2. 樱花循环飘落逻辑 (保持不变)
+        // --- E. 前景层：循环樱花 ---
         petals.forEach((petal, i) => {
             petal.y += petal.s;
-            petal.x += petal.vx + Math.sin(frame * 0.02 + i) * 0.2;
+            petal.x += petal.vx + Math.sin(frame * 0.02 + i) * 0.15;
 
-            if(petal.y > 100) {
-                petal.y = -5;
-                petal.x = Math.random() * 100;
-            }
-            if(petal.x > 100) petal.x = -5;
+            if(petal.y > 105) { petal.y = -5; petal.x = Math.random() * 100; }
+            if(petal.x > 105) petal.x = -5;
 
             ctx.save();
             ctx.translate(petal.x * S, petal.y * S);
@@ -214,9 +249,14 @@ function render() {
             ctx.restore();
         });
 
+        // --- F. 底部细节：草丛 ---
+        for(let i=0; i<6; i++) {
+            p(i*20 - 5, 96, 15, 6, '#aed581');
+        }
+
         requestAnimationFrame(render);
     }
     render();
 </script>
 </body>
-</html>    
+</html>
