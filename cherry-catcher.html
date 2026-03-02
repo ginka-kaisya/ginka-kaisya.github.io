@@ -3,257 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>接樱花 2.0 - 像素广工</title>
+    <title>接樱花 5.1 - 典藏全功能版</title>
     <style>
         :root {
-            --pink: #ff80ab;
-            --heart: #ff5252;
-            --sky-blue: #87ceeb;
-            --grass-green: #9ccc65;
+            --gdut-red: #d32f2f;
+            --gold: #fbc02d;
+            --glass: rgba(255, 255, 255, 0.82);
+            --primary: #6d4c41;
+            --gray: #607d8b;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(to bottom, #4fc3f7 0%, #e1f5fe 70%, #fff 100%);
-            touch-action: none;
+            margin: 0; overflow: hidden;
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            background: #a5d6a7 linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)), 
+                        url('https://images.unsplash.com/photo-1523050338692-7b835a07973f?auto=format&fit=crop&q=80&w=2000') center/cover;
+            height: 100vh; touch-action: none;
         }
 
-        /* --- 背景装饰 --- */
-        .sun { position: absolute; top: 40px; right: 40px; width: 80px; height: 80px; background: #fff59d; border-radius: 50%; box-shadow: 0 0 50px #fff59d; z-index: 1; }
-        .cloud { position: absolute; background: white; border-radius: 20px; opacity: 0.8; z-index: 2; animation: moveCloud linear infinite; }
-        .cloud::after, .cloud::before { content: ''; position: absolute; background: white; border-radius: 50%; }
-        @keyframes moveCloud { from { left: -150px; } to { left: 100vw; } }
-        .ground { position: absolute; bottom: 0; width: 100%; height: 60px; background: var(--grass-green); border-top: 5px solid #8bc34a; z-index: 10; }
-
-        /* --- 音量控制按钮 --- */
-        #volume-control {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 45px;
-            height: 45px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            font-size: 20px;
-            border: 2px solid white;
-            transition: transform 0.2s;
+        /* --- 通用卡片样式 --- */
+        .glass-overlay {
+            position: fixed; inset: 0; z-index: 3000;
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(12px);
+            transition: opacity 0.5s ease;
         }
-        #volume-control:active { transform: scale(0.9); }
+
+        .card {
+            background: var(--glass);
+            padding: 35px; border-radius: 28px;
+            width: 90%; max-width: 420px; text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.4);
+            animation: cardPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes cardPop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- 按钮系统 --- */
+        .btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 14px;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-main { background: var(--gdut-red); color: white; }
+        .btn-main:active { transform: scale(0.96); opacity: 0.9; }
+        .btn-sub { background: white; color: var(--gray); border: 2px solid #eee; }
+        .btn-sub:active { background: #f5f5f5; }
+
+        /* --- 音效开关 --- */
+        .audio-control {
+            display: flex; align-items: center; justify-content: center;
+            gap: 15px; margin: 15px 0; padding: 10px;
+            background: rgba(0,0,0,0.05); border-radius: 12px;
+        }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { 
+            position: absolute; cursor: pointer; inset: 0; background: #ccc; 
+            transition: .3s; border-radius: 34px; 
+        }
+        .slider:before { 
+            position: absolute; content: ""; height: 18px; width: 18px; 
+            left: 3px; bottom: 3px; background: white; transition: .3s; border-radius: 50%; 
+        }
+        input:checked + .slider { background: var(--gdut-red); }
+        input:checked + .slider:before { transform: translateX(20px); }
 
         /* --- 游戏 UI --- */
         #status-bar {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 70%;
-            max-width: 400px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            z-index: 100;
-            border: 2px solid white;
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 480px; padding: 12px 25px;
+            background: var(--glass); backdrop-filter: blur(10px);
+            border-radius: 50px; display: flex; justify-content: space-between;
+            z-index: 100; border: 1px solid rgba(255,255,255,0.4); font-weight: 800;
         }
-
-        .stat-value { font-size: 18px; font-weight: 800; color: #555; }
-        #hearts { color: var(--heart); }
 
         #basket {
-            position: absolute;
-            bottom: 55px;
-            width: 90px;
-            height: 45px;
-            background: #795548;
-            border-radius: 5px 5px 30px 30px;
-            display: flex;
-            justify-content: center;
-            z-index: 50;
-            transition: transform 0.1s;
+            position: absolute; bottom: 65px; width: 100px; height: 12px;
+            background: var(--gdut-red); border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); z-index: 50;
         }
-        #basket::before { content: '🧺'; font-size: 45px; margin-top: -35px; }
 
-        .cherry { position: absolute; font-size: 30px; z-index: 30; filter: drop-shadow(0 2px 2px rgba(255,182,193,0.5)); }
+        .falling-item { position: absolute; font-size: 42px; pointer-events: none; z-index: 40; }
 
-        #overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 200; backdrop-filter: blur(5px);
-            justify-content: center; align-items: center;
-        }
-        .modal { background: white; padding: 40px; border-radius: 30px; text-align: center; }
-        .btn { background: var(--pink); color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; margin-top: 15px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+        .stat-box { background: rgba(255,255,255,0.6); padding: 12px; border-radius: 15px; }
+        .stat-num { font-size: 1.4rem; font-weight: 800; color: var(--gdut-red); display: block; }
+
+        .ground { position: absolute; bottom: 0; width: 100%; height: 60px; background: #4caf50; border-top: 4px solid #388e3c; }
     </style>
 </head>
 <body>
 
-    <div id="volume-control">🔇</div>
+    <div id="start-screen" class="glass-overlay">
+        <div class="card">
+            <h1 style="color:var(--gdut-red); margin:0; letter-spacing: 2px;">GDUT</h1>
+            <h2 style="margin:5px 0 20px 0;">樱落校园 · 典藏版</h2>
+            
+            <div class="audio-control">
+                <span>🔊 开启音效反馈</span>
+                <label class="switch">
+                    <input type="checkbox" id="audio-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
 
-    <div class="sun"></div>
-    <div class="cloud" style="top:10%; width:100px; height:30px; animation-duration: 25s;"></div>
-    <div class="cloud" style="top:25%; width:120px; height:40px; animation-duration: 40s; animation-delay: -10s;"></div>
-    <div class="ground"></div>
-
-    <div id="status-bar">
-        <div class="stat-item"><span class="stat-value" id="score">0</span></div>
-        <div class="stat-item"><span class="stat-value" id="level">Lv.1</span></div>
-        <div class="stat-item"><span class="stat-value" id="hearts">❤️❤️❤️</span></div>
-    </div>
-
-    <div id="basket"></div>
-
-    <div id="overlay">
-        <div class="modal">
-            <h1>🌸 游戏结束</h1>
-            <p id="msg-body">你一共接住了 0 片樱花</p>
-            <button class="btn" onclick="startGame()">再试一次</button>
-            <button class="btn" style="background:#90a4ae" onclick="location.href='games.html'">退出</button>
+            <div class="btn-group">
+                <button class="btn btn-main" onclick="startApp()">开始游戏</button>
+                <button class="btn btn-sub" onclick="exitGame()">退出校园</button>
+            </div>
         </div>
     </div>
 
+    <div id="end-screen" class="glass-overlay" style="display:none; opacity:0;">
+        <div class="card">
+            <h2 style="margin-top:0; color:var(--primary);">🎓 载誉归来</h2>
+            <div class="stats-grid">
+                <div class="stat-box"><small>最终积分</small><span id="final-score" class="stat-num">0</span></div>
+                <div class="stat-box"><small>达成等级</small><span id="final-lv" class="stat-num">1</span></div>
+                <div class="stat-box"><small>采撷樱花</small><span id="count-cherry" class="stat-num">0</span></div>
+                <div class="stat-box"><small>录取通知</small><span id="count-notice" class="stat-num">0</span></div>
+            </div>
+            <p id="evaluation" style="font-weight:700; color:var(--gdut-red); margin-bottom: 20px;"></p>
+            
+            <div class="btn-group">
+                <button class="btn btn-main" onclick="location.reload()">再来一局</button>
+                <button class="btn btn-sub" onclick="exitGame()">退出游戏</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-bar">
+        <div>SCORE: <span id="score-val">0</span></div>
+        <div id="lives-val">❤️❤️❤️</div>
+    </div>
+
+    <div id="basket"></div>
+    <div class="ground"></div>
+
     <script>
-        // --- 音效系统 ---
-        let audioCtx;
-        let isMuted = true;
-        const volumeBtn = document.getElementById('volume-control');
+        let audioCtx, isMuted = false;
+        let score = 0, lives = 3, gameActive = false;
+        let cCount = 0, nCount = 0; 
 
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        volumeBtn.addEventListener('click', () => {
-            initAudio();
-            isMuted = !isMuted;
-            volumeBtn.innerText = isMuted ? '🔇' : '🔊';
-            // 简单的点击反馈音
-            if(!isMuted) playSound('catch');
-        });
-
-        function playSound(type) {
+        // --- 物理建模音效引擎 ---
+        function playHitSound(type) {
             if (isMuted || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            const click = audioCtx.createOscillator();
+            const clickG = audioCtx.createGain();
+            click.type = 'square';
+            click.frequency.setValueAtTime(2000, now);
+            clickG.gain.setValueAtTime(0.08, now);
+            clickG.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+            click.connect(clickG); clickG.connect(audioCtx.destination);
+            click.start(); click.stop(now + 0.01);
 
             const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            const g = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
 
-            const now = audioCtx.currentTime;
-
-            if (type === 'catch') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523, now); 
-                osc.frequency.exponentialRampToValueAtTime(1046, now + 0.1); 
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(); osc.stop(now + 0.1);
+            if (type === 'cherry') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1000, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc.start(); osc.stop(now + 0.15);
+            } else if (type === 'notice') {
+                const sub = audioCtx.createOscillator(); const subG = audioCtx.createGain();
+                sub.connect(subG); subG.connect(audioCtx.destination);
+                osc.type = 'sine'; sub.type = 'sine';
+                osc.frequency.setValueAtTime(1760, now); sub.frequency.setValueAtTime(2217, now);
+                g.gain.setValueAtTime(0.1, now); subG.gain.setValueAtTime(0.1, now);
+                g.gain.exponentialRampToValueAtTime(0.001, now + 0.5); subG.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.start(); sub.start(); osc.stop(now + 0.5); sub.stop(now + 0.5);
             } else if (type === 'miss') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(110, now);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-                osc.start(); osc.stop(now + 0.2);
-            } else if (type === 'over') {
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.exponentialRampToValueAtTime(55, now + 0.5);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
-                osc.start(); osc.stop(now + 0.5);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+                g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0.001, now + 0.3);
+                osc.start(); osc.stop(now + 0.3);
             }
         }
 
-        // --- 游戏逻辑 ---
-        const basket = document.getElementById('basket');
-        const scoreDisplay = document.getElementById('score');
-        const levelDisplay = document.getElementById('level');
-        const heartsDisplay = document.getElementById('hearts');
-        const overlay = document.getElementById('overlay');
-        const msgBody = document.getElementById('msg-body');
+        function triggerFeedback() {
+            const b = document.getElementById('basket');
+            b.style.transform = 'scale(1.3, 0.6)';
+            setTimeout(() => b.style.transform = 'scale(1)', 100);
+            document.body.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
+            setTimeout(() => document.body.style.transform = 'translate(0,0)', 50);
+        }
 
-        let score = 0, lives = 3, level = 1, gameActive = false, speedMultiplier = 1, spawnRate = 1000, spawnTimer;
+        function exitGame() {
+            if (confirm("确定要离开广东工业大学吗？")) {
+                window.close();
+                // 针对无法直接关闭的浏览器页面的兜底
+                setTimeout(() => { window.location.href = "about:blank"; }, 100);
+            }
+        }
 
-        const handleMove = (x) => {
-            if(!gameActive) return;
-            let targetX = x - basket.offsetWidth/2;
-            targetX = Math.max(0, Math.min(window.innerWidth - basket.offsetWidth, targetX));
-            basket.style.left = targetX + 'px';
-        };
+        function startApp() {
+            isMuted = !document.getElementById('audio-toggle').checked;
+            initAudio();
+            const screen = document.getElementById('start-screen');
+            screen.style.opacity = '0';
+            setTimeout(() => {
+                screen.style.display = 'none';
+                gameActive = true;
+                setInterval(spawnItem, 800);
+            }, 500);
+        }
 
-        document.addEventListener('mousemove', (e) => handleMove(e.clientX));
-        document.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e.touches[0].clientX); }, {passive: false});
+        function spawnItem() {
+            if (!gameActive) return;
+            const item = document.createElement('div');
+            item.className = 'falling-item';
+            const r = Math.random();
+            let type = r < 0.15 ? 'notice' : 'cherry';
+            item.innerHTML = type === 'notice' ? '✉️' : '🌸';
+            if(type === 'notice') item.style.filter = "drop-shadow(0 0 10px gold)";
 
-        function createCherry() {
-            if(!gameActive) return;
-            const cherry = document.createElement('div');
-            cherry.className = 'cherry';
-            cherry.innerHTML = '🌸';
-            cherry.style.left = Math.random() * (window.innerWidth - 40) + 'px';
-            cherry.style.top = '-50px';
-            document.body.appendChild(cherry);
+            item.style.left = Math.random() * (window.innerWidth - 60) + 'px';
+            item.style.top = '-60px';
+            document.body.appendChild(item);
 
-            let top = -50, fallSpeed = (3 + Math.random() * 2) * speedMultiplier;
+            let y = -60, speed = 4.5 + (score / 60);
             function step() {
-                if(!gameActive) { cherry.remove(); return; }
-                top += fallSpeed;
-                cherry.style.top = top + 'px';
-                cherry.style.transform = `rotate(${top}deg)`;
+                if (!gameActive) { item.remove(); return; }
+                y += speed;
+                item.style.top = y + 'px';
+                
+                const b = document.getElementById('basket').getBoundingClientRect();
+                const i = item.getBoundingClientRect();
 
-                const bRect = basket.getBoundingClientRect(), cRect = cherry.getBoundingClientRect();
-                if (cRect.bottom >= bRect.top && cRect.right >= bRect.left && cRect.left <= bRect.right && cRect.top <= bRect.bottom) {
-                    score++; playSound('catch'); 
-                    basket.style.transform = 'scale(1.2)';
-                    setTimeout(()=> basket.style.transform = 'scale(1)', 100);
-                    updateUI(); cherry.remove(); return;
+                if (i.bottom > b.top && i.right > b.left && i.left < b.right && i.top < b.bottom) {
+                    if (type === 'notice') { score += 20; nCount++; playHitSound('notice'); }
+                    else { score += 1; cCount++; playHitSound('cherry'); }
+                    document.getElementById('score-val').innerText = score;
+                    triggerFeedback();
+                    item.remove(); return;
                 }
-                if (top > window.innerHeight) { 
-                    lives--; playSound('miss'); updateHearts(); cherry.remove(); 
-                    if(lives <= 0) endGame(); return; 
+
+                if (y > window.innerHeight) {
+                    if (type === 'cherry') {
+                        lives--;
+                        document.getElementById('lives-val').innerText = "❤️".repeat(lives);
+                        playHitSound('miss');
+                    }
+                    item.remove();
+                    if (lives <= 0) endGame();
+                    return;
                 }
                 requestAnimationFrame(step);
             }
             requestAnimationFrame(step);
         }
 
-        function updateUI() {
-            scoreDisplay.innerText = score;
-            if (score > 0 && score % 10 === 0) {
-                level = Math.floor(score/10) + 1;
-                levelDisplay.innerText = 'Lv.' + level;
-                speedMultiplier = 1 + (level - 1) * 0.2;
-                clearInterval(spawnTimer);
-                spawnRate = Math.max(350, 1000 - (level * 60));
-                spawnTimer = setInterval(createCherry, spawnRate);
-            }
+        function endGame() {
+            gameActive = false;
+            const endScreen = document.getElementById('end-screen');
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-lv').innerText = Math.floor(score/50) + 1;
+            document.getElementById('count-cherry').innerText = cCount;
+            document.getElementById('count-notice').innerText = nCount;
+            
+            let eval = "广工优秀学子！";
+            if(score > 300) eval = "广工传奇校友！";
+            else if(score < 50) eval = "常回校园看看吧。";
+            document.getElementById('evaluation').innerText = eval;
+
+            endScreen.style.display = 'flex';
+            setTimeout(() => endScreen.style.opacity = '1', 50);
         }
 
-        function updateHearts() { heartsDisplay.innerText = "❤️".repeat(lives) + "🖤".repeat(3-lives); }
-        function endGame() { gameActive = false; clearInterval(spawnTimer); playSound('over'); msgBody.innerText = `你在广工校园里接住了 ${score} 片樱花！`; overlay.style.display = 'flex'; }
-        
-        function startGame() {
-            initAudio(); // 尝试启动
-            score = 0; lives = 3; level = 1; speedMultiplier = 1; spawnRate = 1000; gameActive = true;
-            scoreDisplay.innerText = "0"; levelDisplay.innerText = "Lv.1"; updateHearts();
-            overlay.style.display = 'none';
-            clearInterval(spawnTimer);
-            spawnTimer = setInterval(createCherry, spawnRate);
-        }
+        // 交互
+        const handleMove = (x) => {
+            if(!gameActive) return;
+            const basketW = 100;
+            let targetX = Math.max(basketW/2, Math.min(window.innerWidth - basketW/2, x));
+            document.getElementById('basket').style.left = (targetX - basketW/2) + 'px';
+        };
 
-        window.onload = startGame;
+        document.addEventListener('mousemove', (e) => handleMove(e.clientX));
+        document.addEventListener('touchmove', (e) => {
+            handleMove(e.touches[0].clientX);
+        }, {passive: false});
+
     </script>
 </body>
 </html>
