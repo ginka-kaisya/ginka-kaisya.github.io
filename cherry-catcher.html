@@ -131,4 +131,146 @@
     <div id="overlay">
         <div class="modal">
             <h1 id="msg-title">游戏结束</h1>
-            <p id="msg-body">你在
+            <p id="msg-body">你在广工校园里接住了 0 片樱花</p>
+            <button class="btn" onclick="startGame()">再来一局</button>
+            <br>
+            <button class="btn secondary" onclick="location.href='games.html'">返回大厅</button>
+        </div>
+    </div>
+
+    <script>
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        const levelDisplay = document.getElementById('level');
+        const heartsDisplay = document.getElementById('hearts');
+        const overlay = document.getElementById('overlay');
+        const msgBody = document.getElementById('msg-body');
+
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let gameActive = true;
+        let speedMultiplier = 1;
+        let spawnRate = 1000;
+        let spawnTimer;
+
+        // 核心：控制篮子跟随鼠标/手指
+        document.addEventListener('mousemove', (e) => moveBasket(e.clientX));
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            moveBasket(e.touches[0].clientX);
+        }, {passive: false});
+
+        function moveBasket(x) {
+            if(!gameActive) return;
+            let targetX = x - basket.offsetWidth / 2;
+            targetX = Math.max(0, Math.min(window.innerWidth - basket.offsetWidth, targetX));
+            basket.style.left = targetX + 'px';
+        }
+
+        function createCherry() {
+            if(!gameActive) return;
+
+            const cherry = document.createElement('div');
+            cherry.className = 'cherry';
+            cherry.innerHTML = '🌸';
+            cherry.style.left = Math.random() * (window.innerWidth - 40) + 'px';
+            cherry.style.top = '-50px';
+            document.body.appendChild(cherry);
+
+            let top = -50;
+            let fallSpeed = (3 + Math.random() * 2) * speedMultiplier;
+            let rotation = 0;
+
+            function step() {
+                if(!gameActive) {
+                    cherry.remove();
+                    return;
+                }
+
+                top += fallSpeed;
+                rotation += 2;
+                cherry.style.top = top + 'px';
+                cherry.style.transform = `rotate(${rotation}deg)`;
+
+                const bRect = basket.getBoundingClientRect();
+                const cRect = cherry.getBoundingClientRect();
+
+                // 碰撞检测
+                if (cRect.bottom >= bRect.top && 
+                    cRect.right >= bRect.left && 
+                    cRect.left <= bRect.right && 
+                    cRect.top <= bRect.bottom) {
+                    
+                    score++;
+                    updateGameState();
+                    // 接住动效
+                    basket.style.transform = 'scale(1.1)';
+                    setTimeout(() => basket.style.transform = 'scale(1)', 100);
+                    cherry.remove();
+                    return;
+                }
+
+                // 漏接检测
+                if (top > window.innerHeight) {
+                    lives--;
+                    updateHearts();
+                    cherry.remove();
+                    if(lives <= 0) endGame();
+                    return;
+                }
+
+                requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function updateGameState() {
+            scoreDisplay.innerText = score;
+            // 每接住10个升一级，增加速度
+            if (score % 10 === 0) {
+                level = Math.floor(score / 10) + 1;
+                levelDisplay.innerText = level;
+                speedMultiplier = 1 + (level - 1) * 0.15;
+                // 加快生成频率
+                clearInterval(spawnTimer);
+                spawnRate = Math.max(300, 1000 - (level * 50));
+                spawnTimer = setInterval(createCherry, spawnRate);
+            }
+        }
+
+        function updateHearts() {
+            heartsDisplay.innerText = "❤️".repeat(lives) + "🖤".repeat(3 - lives);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(spawnTimer);
+            msgBody.innerText = `你在广工校园里接住了 ${score} 片樱花！`;
+            overlay.style.display = 'flex';
+        }
+
+        function startGame() {
+            // 重置所有状态
+            score = 0;
+            lives = 3;
+            level = 1;
+            speedMultiplier = 1;
+            spawnRate = 1000;
+            gameActive = true;
+            
+            scoreDisplay.innerText = "0";
+            levelDisplay.innerText = "1";
+            updateHearts();
+            overlay.style.display = 'none';
+
+            clearInterval(spawnTimer);
+            spawnTimer = setInterval(createCherry, spawnRate);
+        }
+
+        // 启动
+        startGame();
+
+    </script>
+</body>
+</html>
