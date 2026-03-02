@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>接樱花 - 像素广工</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(to bottom, #e3f2fd 0%, #fce4ec 100%);
+            --pink: #ff80ab;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'PingFang SC', sans-serif;
+            background: var(--bg-gradient);
+            touch-action: none; /* 防止移动端缩放 */
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 得分板 */
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ad1457;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-decoration: none;
+            color: #888;
+            background: #fff;
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        /* 篮子（玩家） */
+        #basket {
+            position: absolute;
+            bottom: 30px;
+            width: 80px;
+            height: 40px;
+            background: #8d6e63;
+            border-radius: 0 0 40px 40px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        /* 篮子装饰线 */
+        #basket::after {
+            content: '🧺';
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+        }
+
+        /* 樱花粒子 */
+        .cherry {
+            position: absolute;
+            font-size: 25px;
+            user-select: none;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        /* 游戏结束弹窗 */
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        button {
+            background: var(--pink);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="score-board">樱花: <span id="score">0</span></div>
+        <a href="games.html" class="back-btn">退出游戏</a>
+        
+        <div id="basket"></div>
+
+        <div id="game-over">
+            <h2>游戏结束 🌸</h2>
+            <p>你今天在广工收集了 <span id="final-score">0</span> 片樱花！</p>
+            <button onclick="resetGame()">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const basket = document.getElementById('basket');
+        const scoreElement = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreElement = document.getElementById('final-score');
+
+        let score = 0;
+        let isGameOver = false;
+        let basketX = window.innerWidth / 2 - 40;
+
+        // 初始化篮子位置
+        basket.style.left = basketX + 'px';
+
+        // 移动控制（支持鼠标和触摸）
+        function moveHandler(e) {
+            if (isGameOver) return;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            basketX = clientX - 40;
+            
+            // 限制不超出屏幕
+            if (basketX < 0) basketX = 0;
+            if (basketX > window.innerWidth - 80) basketX = window.innerWidth - 80;
+            
+            basket.style.left = basketX + 'px';
+        }
+
+        document.addEventListener('mousemove', moveHandler);
+        document.addEventListener('touchmove', moveHandler);
+
+        // 创建樱花
+        function createCherry() {
+            if (isGameOver) return;
+
+            const cherry = document.createElement('div');
+            cherry.className = 'cherry';
+            cherry.innerHTML = '🌸';
+            cherry.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+            cherry.style.top = '-50px';
+            container.appendChild(cherry);
+
+            let top = -50;
+            let speed = 2 + Math.random() * 3; // 随机速度
+            let angle = Math.random() * 360; // 随机旋转
+
+            function fall() {
+                if (isGameOver) {
+                    cherry.remove();
+                    return;
+                }
+
+                top += speed;
+                angle += 2;
+                cherry.style.top = top + 'px';
+                cherry.style.transform = `rotate(${angle}deg)`;
+
+                // 碰撞检测
+                const cherryRect = cherry.getBoundingClientRect();
+                const basketRect = basket.getBoundingClientRect();
+
+                if (
+                    cherryRect.bottom >= basketRect.top &&
+                    cherryRect.right >= basketRect.left &&
+                    cherryRect.left <= basketRect.right &&
+                    cherryRect.top <= basketRect.bottom
+                ) {
+                    score++;
+                    scoreElement.innerText = score;
+                    cherry.remove();
+                    return;
+                }
+
+                // 漏掉樱花
+                if (top > window.innerHeight) {
+                    endGame();
+                    cherry.remove();
+                    return;
+                }
+
+                requestAnimationFrame(fall);
+            }
+
+            requestAnimationFrame(fall);
+        }
+
+        // 游戏循环（生成樱花的频率）
+        let spawnInterval = setInterval(createCherry, 800);
+
+        function endGame() {
+            isGameOver = true;
+            clearInterval(spawnInterval);
+            finalScoreElement.innerText = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function resetGame() {
+            score = 0;
+            scoreElement.innerText = '0';
+            isGameOver = false;
+            gameOverScreen.style.display = 'none';
+            spawnInterval = setInterval(createCherry, 800);
+        }
+
+        // 窗口大小改变适应
+        window.addEventListener('resize', () => {
+            basketX = window.innerWidth / 2 - 40;
+            basket.style.left = basketX + 'px';
+        });
+    </script>
+</body>
+</html>
