@@ -9,6 +9,7 @@
             --primary: #81c784;
             --accent: #ff8a80;
             --sky: #4fc3f7;
+            --csgo-orange: #f29000; /* CSGO 招牌橙色 */
             --glass: rgba(255, 255, 255, 0.88);
             --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
         }
@@ -24,7 +25,6 @@
             color: #37474f;
         }
 
-        /* 菜单主容器 */
         .menu-container {
             width: 95%;
             max-width: 900px;
@@ -35,7 +35,7 @@
             box-shadow: 0 30px 60px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.6);
             display: grid;
-            grid-template-columns: 1fr 280px; /* 左侧列表，右侧边栏 */
+            grid-template-columns: 1fr 280px;
             gap: 30px;
             position: relative;
             overflow: hidden;
@@ -46,7 +46,6 @@
             .sidebar { display: none; }
         }
 
-        /* 左上角返回 */
         .back-btn {
             position: absolute;
             top: 25px;
@@ -62,7 +61,6 @@
         }
         .back-btn:hover { color: var(--primary); transform: translateX(-5px); }
 
-        /* 左侧游戏内容 */
         .main-content h1 { 
             font-size: 2.2rem; 
             color: #2e7d32; 
@@ -99,6 +97,11 @@
             box-shadow: 0 15px 30px rgba(0,0,0,0.05);
         }
 
+        /* 为 CSGO 卡片定制悬停效果 */
+        .csgo-card:hover {
+            border-color: var(--csgo-orange);
+        }
+
         .game-icon {
             width: 60px;
             height: 60px;
@@ -121,7 +124,6 @@
             display: inline-block;
         }
 
-        /* 右侧边栏 */
         .sidebar {
             background: rgba(255,255,255,0.5);
             border-radius: 30px;
@@ -131,9 +133,7 @@
             gap: 25px;
         }
 
-        .stat-box {
-            text-align: left;
-        }
+        .stat-box { text-align: left; }
         .stat-label { font-size: 0.8rem; color: #78909c; }
         .stat-value { font-size: 1.4rem; font-weight: bold; color: #2e7d32; }
 
@@ -146,7 +146,7 @@
             color: #546e7a;
         }
         .dot { width: 8px; height: 8px; background: #ddd; border-radius: 50%; }
-        .dot.done { background: var(--primary); box-shadow: 0 0 5px var(--primary); }
+        .dot.done { background: var(--primary); }
 
         .announcement {
             margin-top: auto;
@@ -162,13 +162,11 @@
 <body>
 
     <div class="menu-container">
-        <div style="position:absolute; top:-20px; right:-20px; font-size:80px; opacity:0.05">🕹️</div>
-
         <a href="index.html" class="back-btn"><span>🏠</span> 返回主页</a>
 
         <div class="main-content">
             <h1>游戏中心 <span>🎮</span></h1>
-            <p class="subtitle">这里是广工学子的课间放松地，请选择你的挑战：</p>
+            <p class="subtitle">广工课后消遣，从治愈像素到硬核竞技：</p>
 
             <div class="game-grid">
                 <a href="cherry-catcher.html" class="game-card">
@@ -187,11 +185,11 @@
                     </div>
                 </a>
 
-                <a href="pixel-match.html" class="game-card">
-                    <div class="game-icon" style="background:#f1f8e9">🧩</div>
+                <a href="https://www.counter-strike.net/cs2" target="_blank" class="game-card csgo-card">
+                    <div class="game-icon" style="background:#fff3e0">🔫</div>
                     <div class="game-info">
-                        <div class="title">校园拼图</div>
-                        <div class="tag">智力闯关</div>
+                        <div class="title">CSGO 2</div>
+                        <div class="tag" style="background:#fff3e0; color:#e65100;">官方网站</div>
                     </div>
                 </a>
 
@@ -217,16 +215,16 @@
                     <div class="dot done"></div> 访问像素广工 (1/1)
                 </div>
                 <div class="quest-item">
-                    <div class="dot"></div> 接住 50 片樱花 (0/50)
+                    <div class="dot"></div> Rush B 成功 (0/1)
                 </div>
                 <div class="quest-item">
-                    <div class="dot"></div> 拼图通关一次 (0/1)
+                    <div class="dot"></div> 接住 50 片樱花 (0/50)
                 </div>
             </div>
 
             <div class="announcement">
                 <strong>广播站：</strong>
-                图书馆新到一批像素书籍，欢迎同学们前往借阅！
+                宿舍网络优化完毕，祝各位在 CS2 战场旗开得胜！
             </div>
         </div>
     </div>
