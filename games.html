@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>游戏菜单 - 像素广工</title>
+    <title>游戏中心 - 像素广工</title>
     <style>
         :root {
+            --primary: #81c784;
+            --accent: #ff8a80;
+            --sky: #4fc3f7;
+            --glass: rgba(255, 255, 255, 0.88);
             --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
-            --glass: rgba(255, 255, 255, 0.85);
         }
 
         body {
@@ -21,102 +24,210 @@
             color: #37474f;
         }
 
+        /* 菜单主容器 */
         .menu-container {
-            width: 90%;
-            max-width: 800px;
+            width: 95%;
+            max-width: 900px;
             background: var(--glass);
             backdrop-filter: blur(20px);
             border-radius: 40px;
             padding: 40px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.5);
-            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.6);
+            display: grid;
+            grid-template-columns: 1fr 280px; /* 左侧列表，右侧边栏 */
+            gap: 30px;
             position: relative;
+            overflow: hidden;
         }
 
+        @media (max-width: 850px) {
+            .menu-container { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+
+        /* 左上角返回 */
         .back-btn {
             position: absolute;
-            top: 30px;
+            top: 25px;
             left: 30px;
             text-decoration: none;
-            color: #546e7a;
-            font-size: 0.9rem;
+            color: #78909c;
+            font-size: 0.85rem;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             transition: 0.3s;
+            z-index: 5;
         }
+        .back-btn:hover { color: var(--primary); transform: translateX(-5px); }
 
-        .back-btn:hover { color: #81c784; transform: translateX(-5px); }
+        /* 左侧游戏内容 */
+        .main-content h1 { 
+            font-size: 2.2rem; 
+            color: #2e7d32; 
+            margin: 10px 0 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .subtitle { color: #90a4ae; margin-bottom: 30px; font-size: 0.95rem; }
 
-        h1 { color: #2e7d32; font-size: 2.5rem; margin-bottom: 10px; }
-        .subtitle { color: #78909c; margin-bottom: 40px; }
-
-        .game-list {
+        .game-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
         .game-card {
-            background: white;
-            border-radius: 25px;
-            padding: 30px 20px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 30px;
+            padding: 25px;
             text-decoration: none;
             color: inherit;
+            border: 2px solid transparent;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid #eee;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            gap: 15px;
         }
 
         .game-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-            border-color: #81c784;
+            background: #fff;
+            transform: scale(1.03);
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.05);
         }
 
-        .icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
+        .game-icon {
+            width: 60px;
+            height: 60px;
+            background: #f5f5f5;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
         }
 
-        .game-title { font-weight: 700; font-size: 1.2rem; color: #37474f; }
-        .game-desc { font-size: 0.85rem; color: #90a4ae; margin-top: 8px; }
+        .game-info .title { font-weight: bold; color: #37474f; font-size: 1.1rem; }
+        .game-info .tag { 
+            font-size: 0.7rem; 
+            background: #e1f5fe; 
+            color: #039be5; 
+            padding: 2px 8px; 
+            border-radius: 10px;
+            margin-top: 4px;
+            display: inline-block;
+        }
 
-        /* 特殊颜色装饰 */
-        .card-1:hover .icon { filter: drop-shadow(0 0 8px #ff8a80); }
-        .card-2:hover .icon { filter: drop-shadow(0 0 8px #81c784); }
-        .card-3:hover .icon { filter: drop-shadow(0 0 8px #4fc3f7); }
+        /* 右侧边栏 */
+        .sidebar {
+            background: rgba(255,255,255,0.5);
+            border-radius: 30px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .stat-box {
+            text-align: left;
+        }
+        .stat-label { font-size: 0.8rem; color: #78909c; }
+        .stat-value { font-size: 1.4rem; font-weight: bold; color: #2e7d32; }
+
+        .quest-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #546e7a;
+        }
+        .dot { width: 8px; height: 8px; background: #ddd; border-radius: 50%; }
+        .dot.done { background: var(--primary); box-shadow: 0 0 5px var(--primary); }
+
+        .announcement {
+            margin-top: auto;
+            background: #fff9c4;
+            padding: 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            color: #afb42b;
+            border-left: 4px solid #fbc02d;
+        }
     </style>
 </head>
 <body>
 
     <div class="menu-container">
-        <a href="index.html" class="back-btn">← 返回主页</a>
-        
-        <h1>游戏菜单</h1>
-        <p class="subtitle">在广工的午后，选一个游戏消磨时光吧</p>
+        <div style="position:absolute; top:-20px; right:-20px; font-size:80px; opacity:0.05">🕹️</div>
 
-        <div class="game-list">
-            <a href="cherry-catcher.html" class="game-card card-1">
-                <div class="icon">🌸</div>
-                <div class="game-title">接樱花</div>
-                <div class="game-desc">不要让飘落的樱花着地</div>
-            </a>
+        <a href="index.html" class="back-btn"><span>🏠</span> 返回主页</a>
 
-            <a href="teru-jump.html" class="game-card card-2">
-                <div class="icon">☁️</div>
-                <div class="game-title">晴天跳跳</div>
-                <div class="game-desc">操控晴天娃娃跃上云端</div>
-            </a>
+        <div class="main-content">
+            <h1>游戏中心 <span>🎮</span></h1>
+            <p class="subtitle">这里是广工学子的课间放松地，请选择你的挑战：</p>
 
-            <a href="pixel-match.html" class="game-card card-3">
-                <div class="icon">🧩</div>
-                <div class="game-title">校园拼图</div>
-                <div class="game-desc">还原像素风的图书馆</div>
-            </a>
+            <div class="game-grid">
+                <a href="cherry-catcher.html" class="game-card">
+                    <div class="game-icon" style="background:#fff1f2">🌸</div>
+                    <div class="game-info">
+                        <div class="title">接樱花</div>
+                        <div class="tag">敏捷挑战</div>
+                    </div>
+                </a>
+
+                <a href="teru-jump.html" class="game-card">
+                    <div class="game-icon" style="background:#e0f7fa">☁️</div>
+                    <div class="game-info">
+                        <div class="title">晴天跳跳</div>
+                        <div class="tag">无尽模式</div>
+                    </div>
+                </a>
+
+                <a href="pixel-match.html" class="game-card">
+                    <div class="game-icon" style="background:#f1f8e9">🧩</div>
+                    <div class="game-info">
+                        <div class="title">校园拼图</div>
+                        <div class="tag">智力闯关</div>
+                    </div>
+                </a>
+
+                <a href="#" class="game-card" style="opacity:0.6; cursor:not-allowed;">
+                    <div class="game-icon">🔒</div>
+                    <div class="game-info">
+                        <div class="title">敬请期待</div>
+                        <div class="tag">即将解锁</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="stat-box">
+                <div class="stat-label">今日获得樱花</div>
+                <div class="stat-value">128 🌸</div>
+            </div>
+
+            <div>
+                <div class="stat-label">每日任务</div>
+                <div class="quest-item">
+                    <div class="dot done"></div> 访问像素广工 (1/1)
+                </div>
+                <div class="quest-item">
+                    <div class="dot"></div> 接住 50 片樱花 (0/50)
+                </div>
+                <div class="quest-item">
+                    <div class="dot"></div> 拼图通关一次 (0/1)
+                </div>
+            </div>
+
+            <div class="announcement">
+                <strong>广播站：</strong>
+                图书馆新到一批像素书籍，欢迎同学们前往借阅！
+            </div>
         </div>
     </div>
 
