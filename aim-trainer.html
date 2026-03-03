@@ -285,17 +285,60 @@
             }
         }
 
-        function endGame() {
-            gameActive = false;
-            document.getElementById('ui-end').style.display = 'flex';
-            document.getElementById('result-score').innerText = `SCORE: ${score}`;
-            const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
-            document.getElementById('result-accuracy').innerText = `准确率: ${acc}% | 击中数: ${hits}`;
-            
-            if(acc > 80) document.getElementById('result-title').innerText = "狙击之神!";
-            else if(acc > 50) document.getElementById('result-title').innerText = "表现不错!";
-            else document.getElementById('result-title').innerText = "还需要练习哦!";
-        }
+function endGame() {
+    gameActive = false;
+    const uiEnd = document.getElementById('ui-end');
+    const resTitle = document.getElementById('result-title');
+    const resScore = document.getElementById('result-score');
+    const resAcc = document.getElementById('result-accuracy');
+    
+    uiEnd.style.display = 'flex';
+    resScore.innerText = `SCORE: ${score}`;
+    
+    const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+    resAcc.innerText = `准确率: ${acc}% | 击中数: ${hits}`;
+
+    // --- 升级后的评分逻辑 ---
+    let rank = "";
+    let rankColor = "";
+    let comment = "";
+
+    if (score >= 4500 && acc >= 95) {
+        rank = "SSS · 广工独孤求败";
+        rankColor = "#ff1744"; // 狂暴红
+        comment = "你的反应已经超越了人类极限！";
+    } else if (score >= 3500 && acc >= 90) {
+        rank = "SS · 顶尖职业狙神";
+        rankColor = "#ff9100"; // 传说橙
+        comment = "这种水平，不去打职业可惜了。";
+    } else if (score >= 2500 && acc >= 80) {
+        rank = "S · 宿舍战神";
+        rankColor = "#f50057"; // 枪王粉
+        comment = "整个宿舍楼都没人敢跟你对狙。";
+    } else if (score >= 1800 && acc >= 70) {
+        rank = "A · 稳健射手";
+        rankColor = "#651fff"; // 优雅紫
+        comment = "非常扎实的基本功，枪法很稳。";
+    } else if (score >= 1000 && acc >= 50) {
+        rank = "B · 及格边缘";
+        rankColor = "#00b0ff"; // 能量蓝
+        comment = "还有进步空间，多去图书馆练练手速。";
+    } else if (hits > 0) {
+        rank = "C · 人体描边大师";
+        rankColor = "#78909c"; // 迷雾灰
+        comment = "你是在给靶子做全身按摩吗？";
+    } else {
+        rank = "D · 挂机少年";
+        rankColor = "#000000";
+        comment = "哪怕是广工的猫，爪子拍一下也能得分。";
+    }
+
+    resTitle.innerText = rank;
+    resTitle.style.color = rankColor;
+    
+    // 如果想额外显示评价，可以把 comment 塞进 resAcc
+    resAcc.innerHTML += `<br><span style="color:${rankColor}; font-size:0.9rem; font-style:italic;">"${comment}"</span>`;
+}
 
         canvas.addEventListener('mousedown', (e) => {
             if (!gameActive) return;
