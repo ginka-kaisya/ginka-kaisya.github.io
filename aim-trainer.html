@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打靶训练 Pro - 像素广工</title>
+    <title>打靶训练 Pro - 安全加强版</title>
     <style>
         :root {
             --primary: #81c784;
@@ -25,7 +25,6 @@
             cursor: crosshair;
         }
 
-        /* 游戏大容器 */
         .game-wrapper {
             width: 95vw;
             max-width: 1100px;
@@ -38,7 +37,6 @@
             position: relative;
         }
 
-        /* 顶部仪表盘 */
         .dashboard {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -57,7 +55,6 @@
         .stat-label { font-size: 0.8rem; color: #78909c; text-transform: uppercase; letter-spacing: 1px; }
         .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--dark); margin-top: 5px; }
 
-        /* 计时进度条 */
         .timer-container {
             grid-column: span 3;
             height: 8px;
@@ -74,7 +71,6 @@
             transition: width 0.1s linear;
         }
 
-        /* 画布区域 */
         .canvas-area {
             position: relative;
             background: #fdfdfd;
@@ -87,10 +83,9 @@
         #game-canvas {
             display: block;
             width: 100%;
-            height: 550px; /* 增加了高度 */
+            height: 550px;
         }
 
-        /* 覆盖层（开始/结束） */
         .overlay {
             position: absolute;
             inset: 0;
@@ -133,19 +128,19 @@
             opacity: 0.8;
         }
 
-        /* 击中特效文字 */
         .combo-text {
             position: absolute;
             pointer-events: none;
             color: var(--primary);
             font-weight: bold;
             font-style: italic;
+            z-index: 10;
             animation: floatUp 0.6s ease-out forwards;
         }
 
         @keyframes floatUp {
-            from { opacity: 1; transform: translateY(0) scale(1.2); }
-            to { opacity: 0; transform: translateY(-40px) scale(1); }
+            from { opacity: 1; transform: translate(-50%, 0) scale(1.2); }
+            to { opacity: 0; transform: translate(-50%, -40px) scale(1); }
         }
     </style>
 </head>
@@ -186,7 +181,7 @@
             </div>
         </div>
 
-        <a href="index.html" class="back-home">🏠 返回游戏中心</a>
+        <a href="#" class="back-home">🏠 返回游戏中心</a>
     </div>
 
     <script>
@@ -197,7 +192,10 @@
         let score = 0, hits = 0, shots = 0, timeLeft = 30;
         let gameActive = false;
         let targets = [];
-        let particles = [];
+
+        // --- 防作弊：真实时间盾 ---
+        let realStartTime = 0;
+        const GAME_DURATION = 30; // 游戏设定秒数
 
         function resize() {
             canvas.width = canvas.offsetWidth;
@@ -208,35 +206,38 @@
 
         class Target {
             constructor() {
-                this.r = 0; // 初始半径为0，做动画
+                this.r = 0; 
                 this.maxR = Math.random() * 15 + 20;
                 this.x = Math.random() * (canvas.width - this.maxR * 2) + this.maxR;
                 this.y = Math.random() * (canvas.height - this.maxR * 2) + this.maxR;
-                this.life = 1.0; // 生命周期 1.0 -> 0
+                this.life = 1.0; 
                 this.shrinkSpeed = 0.008 + Math.random() * 0.005;
             }
 
             draw() {
-                // 绘制呼吸感的外圈
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(255, 138, 128, ${this.life})`;
                 ctx.fill();
                 
-                // 内圈
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.r * 0.4, 0, Math.PI * 2);
                 ctx.fillStyle = 'white';
                 ctx.fill();
 
-                if(this.r < this.maxR) this.r += 2; // 出生动画
+                if(this.r < this.maxR) this.r += 2;
                 this.life -= this.shrinkSpeed;
             }
         }
 
         function startGame() {
-            score = 0; hits = 0; shots = 0; timeLeft = 30;
-            targets = []; gameActive = true;
+            score = 0; hits = 0; shots = 0; timeLeft = GAME_DURATION;
+            targets = []; 
+            gameActive = true;
+
+            // 记录真实的物理开始时间 (ms)
+            realStartTime = performance.now();
+
             document.getElementById('ui-start').style.display = 'none';
             document.getElementById('ui-end').style.display = 'none';
             updateStats();
@@ -253,21 +254,19 @@
         function gameLoop() {
             if (!gameActive) return;
 
-            // 1. 清屏并画网格线
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawGrid();
 
-            // 2. 更新计时器
+            // 这里的时间是逻辑时间
             timeLeft -= 1/60;
-            timerBar.style.width = (timeLeft / 30) * 100 + '%';
+            timerBar.style.width = (timeLeft / GAME_DURATION) * 100 + '%';
+            
             if (timeLeft <= 0) return endGame();
 
-            // 3. 生成靶标
             if (Math.random() < 0.03 && targets.length < 5) {
                 targets.push(new Target());
             }
 
-            // 4. 绘制靶标
             targets = targets.filter(t => t.life > 0);
             targets.forEach(t => t.draw());
 
@@ -285,60 +284,49 @@
             }
         }
 
-function endGame() {
-    gameActive = false;
-    const uiEnd = document.getElementById('ui-end');
-    const resTitle = document.getElementById('result-title');
-    const resScore = document.getElementById('result-score');
-    const resAcc = document.getElementById('result-accuracy');
-    
-    uiEnd.style.display = 'flex';
-    resScore.innerText = `SCORE: ${score}`;
-    
-    const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
-    resAcc.innerText = `准确率: ${acc}% | 击中数: ${hits}`;
+        function endGame() {
+            gameActive = false;
+            
+            // --- 校验逻辑：对比真实物理耗时 ---
+            const realEndTime = performance.now();
+            const actualElapsedSeconds = (realEndTime - realStartTime) / 1000;
+            
+            const uiEnd = document.getElementById('ui-end');
+            const resTitle = document.getElementById('result-title');
+            const resScore = document.getElementById('result-score');
+            const resAcc = document.getElementById('result-accuracy');
+            
+            uiEnd.style.display = 'flex';
 
-    // --- 升级后的评分逻辑 ---
-    let rank = "";
-    let rankColor = "";
-    let comment = "";
+            // 如果物理耗时 远大于 游戏设定时长，说明开启了虚拟机减速或倍率插件
+            // 允许 5 秒的误差（处理加载卡顿或低性能设备）
+            if (actualElapsedSeconds > (GAME_DURATION + 5)) {
+                resTitle.innerText = "检测到环境异常";
+                resTitle.style.color = "#000";
+                resScore.innerText = "成绩已被作废";
+                resAcc.innerText = "原因：检测到系统时钟篡改（变速作弊）";
+                return;
+            }
 
-    if (score >= 4500 && acc >= 95) {
-        rank = "SSS · 广工独孤求败";
-        rankColor = "#ff1744"; // 狂暴红
-        comment = "你的反应已经超越了人类极限！";
-    } else if (score >= 3500 && acc >= 90) {
-        rank = "SS · 顶尖职业狙神";
-        rankColor = "#ff9100"; // 传说橙
-        comment = "这种水平，不去打职业可惜了。";
-    } else if (score >= 2500 && acc >= 80) {
-        rank = "S · 宿舍战神";
-        rankColor = "#f50057"; // 枪王粉
-        comment = "整个宿舍楼都没人敢跟你对狙。";
-    } else if (score >= 1800 && acc >= 70) {
-        rank = "A · 稳健射手";
-        rankColor = "#651fff"; // 优雅紫
-        comment = "非常扎实的基本功，枪法很稳。";
-    } else if (score >= 1000 && acc >= 50) {
-        rank = "B · 及格边缘";
-        rankColor = "#00b0ff"; // 能量蓝
-        comment = "还有进步空间，多去图书馆练练手速。";
-    } else if (hits > 0) {
-        rank = "C · 人体描边大师";
-        rankColor = "#78909c"; // 迷雾灰
-        comment = "你是在给靶子做全身按摩吗？";
-    } else {
-        rank = "D · 挂机少年";
-        rankColor = "#000000";
-        comment = "哪怕是广工的猫，爪子拍一下也能得分。";
-    }
+            resScore.innerText = `SCORE: ${score}`;
+            const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+            resAcc.innerText = `准确率: ${acc}% | 击中数: ${hits}`;
 
-    resTitle.innerText = rank;
-    resTitle.style.color = rankColor;
-    
-    // 如果想额外显示评价，可以把 comment 塞进 resAcc
-    resAcc.innerHTML += `<br><span style="color:${rankColor}; font-size:0.9rem; font-style:italic;">"${comment}"</span>`;
-}
+            let rank = "", rankColor = "", comment = "";
+            if (score >= 4500 && acc >= 95) {
+                rank = "SSS · 广工独孤求败"; rankColor = "#ff1744"; comment = "反应已经超越人类极限！";
+            } else if (score >= 2500 && acc >= 80) {
+                rank = "S · 宿舍战神"; rankColor = "#f50057"; comment = "整个宿舍楼没人敢跟你对狙。";
+            } else if (score >= 1000 && acc >= 50) {
+                rank = "B · 及格边缘"; rankColor = "#00b0ff"; comment = "还有进步空间，多练练手速。";
+            } else {
+                rank = "C · 人体描边大师"; rankColor = "#78909c"; comment = "你是在给靶子做按摩吗？";
+            }
+
+            resTitle.innerText = rank;
+            resTitle.style.color = rankColor;
+            resAcc.innerHTML += `<br><span style="color:${rankColor}; font-style:italic;">"${comment}"</span>`;
+        }
 
         canvas.addEventListener('mousedown', (e) => {
             if (!gameActive) return;
@@ -354,7 +342,7 @@ function endGame() {
                 const dist = Math.hypot(t.x - x, t.y - y);
                 if (dist < t.r) {
                     hits++;
-                    score += Math.round(t.life * 100); // 消失前越早点中分越高
+                    score += Math.round(t.life * 100);
                     targets.splice(i, 1);
                     isHit = true;
                     showComboEffect(x, y, "HIT!");
@@ -369,7 +357,7 @@ function endGame() {
             el.className = 'combo-text';
             el.innerText = text;
             el.style.left = x + 'px';
-            el.style.top = (y + 100) + 'px'; // 修正容器偏移
+            el.style.top = y + 'px';
             document.querySelector('.canvas-area').appendChild(el);
             setTimeout(() => el.remove(), 600);
         }
