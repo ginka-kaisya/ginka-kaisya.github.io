@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打靶訓練 Pro - CS:GO 視角版 (API版)</title>
+    <title>打靶训练 Pro - CS:GO 视角版</title>
     <style>
-        /* 這裡完整保留您原始的所有 CSS 樣式 */
         :root {
             --primary: #81c784;
             --accent: #4fc3f7;
@@ -238,197 +237,22 @@
 
         <div id="ui-menu" class="overlay">
             <h1 style="color:#eee; margin-bottom: 5px; letter-spacing: 2px;">AIM TRAINER PRO</h1>
-            <p style="color:#90a4ae; margin-bottom: 35px;">CS:GO 視角 | API 聯動版</p>
+            <p style="color:#90a4ae; margin-bottom: 35px;">CS:GO 右下角视角已启用 | 绿色空心准星</p>
             <div class="menu-buttons">
-                <button class="btn" onclick="start('flick')">🎯 打靶訓練 <span>Flick</span></button>
-                <button class="btn btn-secondary" onclick="start('track')">🔫 跟槍訓練 <span>Track</span></button>
-                <button class="btn btn-outline" onclick="location.reload()">退出遊戲</button>
+                <button class="btn" onclick="start('flick')">🎯 打靶训练 <span>Flick</span></button>
+                <button class="btn btn-secondary" onclick="start('track')">🔫 跟枪训练 <span>Track</span></button>
+                <button class="btn btn-outline" onclick="location.href='index.html'">退出游戏</button>
             </div>
         </div>
 
         <div id="ui-end" class="overlay" style="display: none;">
             <h2 id="result-rank" style="font-size: 2.8rem; margin-bottom: 5px;"></h2>
             <p id="result-detail" style="color: #78909c; line-height: 1.6; margin-bottom: 30px; text-align: center;"></p>
-            <button class="btn" style="width: 200px; justify-content: center;" onclick="location.reload()">返回主菜單</button>
+            <button class="btn" style="width: 200px; justify-content: center;" onclick="location.href='index.html'">返回主菜单</button>
         </div>
     </div>
 </div>
 
-<script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const timerBar = document.getElementById('timer-bar');
-    const weaponContainer = document.getElementById('weapon-container');
-    const crosshair = document.getElementById('crosshair');
-    
-    // API 設定
-    const API_BASE = "http://localhost:3000/api/game"; 
-    let sessionId = null;
-    let gameActive = false;
-    let targets = [];
-    let timeLeft = 30;
-    const GAME_DURATION = 30;
-
-    function resize() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // 1. 開始遊戲：對接後端 Start API
-    async function start(mode) {
-        try {
-            const res = await fetch(`${API_BASE}/start`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode })
-            });
-            const data = await res.json();
-            sessionId = data.sessionId;
-
-            gameActive = true;
-            timeLeft = GAME_DURATION;
-            document.getElementById('ui-menu').style.display = 'none';
-            crosshair.style.display = 'block';
-
-            requestAnimationFrame(gameLoop);
-            syncTargets(); // 啟動目標同步
-        } catch (e) {
-            alert("後端 API 未啟動或無法連線！");
-        }
-    }
-
-    // 2. 目標同步：從後端獲取隨機生成的目標座標
-    async function syncTargets() {
-        if (!gameActive) return;
-        try {
-            const res = await fetch(`${API_BASE}/targets/${sessionId}`);
-            const data = await res.json();
-            targets = data.targets; // 接收後端生成的 targets
-            setTimeout(syncTargets, 100); 
-        } catch (e) {}
-    }
-
-    // 3. 渲染循環：保留原始背景網格和繪製邏輯
-    function gameLoop() {
-        if (!gameActive) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 繪製背景網格
-        ctx.strokeStyle = '#222';
-        ctx.lineWidth = 1;
-        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
-        for(let i=0; i<canvas.height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
-
-        // 倒計時（以 60fps 模擬遞減，最終分數由後端校驗）
-        timeLeft -= 1/60;
-        timerBar.style.width = (timeLeft / GAME_DURATION) * 100 + '%';
-        if (timeLeft <= 0) return endGame();
-
-        // 繪製目標
-        targets.forEach(t => {
-            ctx.beginPath();
-            ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 138, 128, ${t.life || 0.8})`;
-            ctx.fill();
-            ctx.strokeStyle = "rgba(255,255,255,0.8)";
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-        });
-
-        requestAnimationFrame(gameLoop);
-    }
-
-    // 4. 滑鼠移動：保留原始持槍搖擺 (Sway)
-    window.addEventListener('mousemove', (e) => {
-        if (gameActive) {
-            crosshair.style.left = e.clientX - 12 + 'px';
-            crosshair.style.top = e.clientY - 12 + 'px';
-
-            const swayX = (e.clientX - window.innerWidth / 2) * 0.06;
-            const swayY = (e.clientY - window.innerHeight / 2) * 0.02;
-            weaponContainer.style.transform = `translate(${swayX}px, ${swayY}px) rotate(${swayX * 0.05}deg)`;
-        }
-    });
-
-    // 5. 點擊判定：對接後端 Click API，保留原始後坐力動畫
-    canvas.addEventListener('mousedown', async (e) => {
-        if (!gameActive) return;
-
-        // 視覺反饋：發光與後坐力
-        weaponContainer.classList.add('weapon-fire');
-        setTimeout(() => weaponContainer.classList.remove('weapon-fire'), 60);
-
-        weaponContainer.style.transition = 'none';
-        weaponContainer.style.transform += ' translate(-8px, -40px) scale(1.04) rotate(-1.5deg)';
-        
-        setTimeout(() => {
-            weaponContainer.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
-            const swayX = (e.clientX - window.innerWidth / 2) * 0.06;
-            const swayY = (e.clientY - window.innerHeight / 2) * 0.02;
-            weaponContainer.style.transform = `translate(${swayX}px, ${swayY}px) rotate(${swayX * 0.05}deg)`;
-        }, 50);
-
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // 調用 API
-        try {
-            const res = await fetch(`${API_BASE}/click`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId, x, y })
-            });
-            const result = await res.json();
-
-            if (result.hit) {
-                showEffect(x, y, `+${result.gainedScore} (x${result.combo})`);
-                document.getElementById('score').innerText = result.currentScore;
-                document.getElementById('hits').innerText = result.hits || parseInt(document.getElementById('hits').innerText)+1;
-            }
-        } catch (e) {}
-    });
-
-    // 6. 結算：對接後端 End API
-    async function endGame() {
-        gameActive = false;
-        crosshair.style.display = 'none';
-        
-        try {
-            const res = await fetch(`${API_BASE}/end`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId })
-            });
-            const data = await res.json();
-
-            document.getElementById('ui-end').style.display = 'flex';
-            const rankEl = document.getElementById('result-rank');
-            rankEl.innerText = data.rank ? `RANK: ${data.rank}` : "GAME OVER";
-            
-            document.getElementById('result-detail').innerHTML = `
-                總分: ${data.score}<br>
-                準確率: ${data.accuracy}%<br>
-                命中數: ${data.hits}<br>
-                最高連擊: ${data.maxCombo}<br>
-                ${data.error ? `<span style="color:red">${data.error}</span>` : '校驗通過'}
-            `;
-        } catch (e) {
-            alert("結算失敗，後端未響應");
-        }
-    }
-
-    function showEffect(x, y, text) {
-        const el = document.createElement('div');
-        el.className = 'combo-text';
-        el.innerText = text;
-        el.style.left = x + 'px';
-        el.style.top = y + 'px';
-        document.querySelector('.canvas-area').appendChild(el);
-        setTimeout(() => el.remove(), 500);
-    }
-</script>
+<script src="api/game-config.js"></script>
 </body>
 </html>
