@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打靶训练 Pro - 最终加强版</title>
+    <title>打靶训练 Pro - CS:GO 视角版</title>
     <style>
         :root {
             --primary: #81c784;
@@ -11,6 +11,8 @@
             --dark: #37474f;
             --glass: rgba(255, 255, 255, 0.95);
             --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
+            /* CS:GO 经典准星颜色 */
+            --crosshair-color: #00ff00; 
         }
 
         body {
@@ -22,8 +24,14 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            cursor: crosshair;
+            /* 关键：隐藏默认鼠标指针，改用自定义准星 */
+            cursor: none; 
         }
+
+/* 开火瞬间通过亮度滤镜模拟火光照在枪身上的效果 */
+.weapon-fire {
+    filter: drop-shadow(0 30px 60px rgba(0,0,0,0.7)) brightness(1.6) !important;
+}
 
         .game-wrapper {
             width: 95vw;
@@ -37,11 +45,13 @@
             position: relative;
         }
 
+        /* 数据看板 */
         .dashboard {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 20px;
+            cursor: default; /* 看板区域允许显示鼠标，便于操作按钮，但游戏时隐藏 */
         }
 
         .stat-card {
@@ -70,19 +80,57 @@
             transition: width 0.1s linear;
         }
 
+        /* 游戏区域 */
         .canvas-area {
             position: relative;
-            background: #fff;
+            background: #1a1a1a; /* 深色背景更有射击感，反衬绿色准星 */
             border-radius: 20px;
             overflow: hidden;
-            border: 2px solid #f0f4f5;
+            border: 2px solid #333;
         }
 
         #game-canvas {
             display: block;
             width: 100%;
-            height: 500px;
+            height: 550px;
         }
+
+        /* --- 关键改动：CS:GO 风格枪模容器 --- */
+        #weapon-container {
+            position: absolute;
+            /* CS:GO 右下角持枪 */
+            bottom: -50px; 
+            right: 2%; 
+            width: 550px; /* 增加宽度以增加透视压缩感 */
+            height: 350px;
+            pointer-events: none;
+            z-index: 50;
+            /* 回弹动画设置，平滑过渡 sway 和 recoil */
+            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 30px 50px rgba(0,0,0,0.6));
+        }
+
+        /* --- 关键改动：CS:GO 风格自定义十字准星 --- */
+        #crosshair {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 200;
+            /* 使用 mix-blend-mode 确保在不同颜色背景上清晰可见（通常不需要，因为网格是深色，绿色很清晰） */
+            /*mix-blend-mode: difference;*/
+            display: none; /* 初始隐藏 */
+        }
+        .ch-line {
+            position: absolute;
+            background-color: var(--crosshair-color);
+            border-radius: 1px;
+        }
+        /* 十字线尺寸（CS:GO 风格，空心） */
+        .ch-v { width: 2px; height: 20px; left: 11px; top: 2px; }
+        .ch-h { width: 20px; height: 2px; top: 11px; left: 2px; }
+        /* 中心点（CS:GO 默认没有，需要空心） */
+        /*.ch-dot { width: 2px; height: 2px; top: 11px; left: 11px; border-radius: 50%; display: none; }*/
 
         .overlay {
             position: absolute;
@@ -91,9 +139,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(255,255,255,0.92);
+            background: rgba(26, 26, 26, 0.95); /* 深色遮罩 */
             z-index: 100;
             backdrop-filter: blur(10px);
+            cursor: default; /* 菜单允许显示鼠标 */
         }
 
         .menu-buttons {
@@ -104,11 +153,11 @@
         }
 
         .btn {
-            background: var(--dark);
+            background: #333; /* 深色按钮 */
             color: white;
             border: none;
             padding: 16px 30px;
-            border-radius: 14px;
+            border-radius: 12px;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
@@ -116,11 +165,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid #444;
         }
 
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); filter: brightness(1.2); }
-        .btn-secondary { background: #546e7a; }
-        .btn-outline { background: transparent; color: #90a4ae; border: 1px solid #cfd8dc; justify-content: center; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); background: #444; border-color: var(--primary); }
+        .btn-secondary { background: #263238; border-color: #37474f; }
+        .btn-outline { background: transparent; color: #90a4ae; border: 1px solid #444; justify-content: center; }
 
         .combo-text {
             position: absolute;
@@ -139,10 +189,15 @@
 </head>
 <body>
 
+<div id="crosshair">
+    <div class="ch-line ch-v"></div>
+    <div class="ch-line ch-h"></div>
+    </div>
+
 <div class="game-wrapper">
     <div class="dashboard">
         <div class="stat-card">
-            <div class="stat-label">SCORE</div>
+            <div class="stat-label" id="score-label">SCORE</div>
             <div id="score" class="stat-value">0</div>
         </div>
         <div class="stat-card">
@@ -161,9 +216,46 @@
     <div class="canvas-area">
         <canvas id="game-canvas"></canvas>
         
+        <div id="weapon-container">
+<svg viewBox="0 0 300 150" width="100%" height="100%">
+    <defs>
+        <linearGradient id="crimsonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#8B0000;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#4A0000;stop-opacity:1" />
+        </linearGradient>
+        <pattern id="gripPattern" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+            <path d="M0 0 L3 3 M3 0 L0 3" stroke="#1a1a1a" stroke-width="0.5"/>
+        </pattern>
+    </defs>
+    
+    <g filter="drop-shadow(3px 5px 4px rgba(0,0,0,0.6))">
+        <circle cx="50" cy="115" r="9" fill="#111" stroke="#000" stroke-width="1"/>
+        <rect x="42" y="113" width="16" height="4" rx="1" fill="#000"/>
+        <circle cx="50" cy="115" r="3" fill="#000" />
+
+        <path d="M58,108 L160,95 L165,135 L58,122 Z" fill="url(#crimsonGradient)" stroke="#3a0000" stroke-width="0.5"/>
+        <path d="M60,109 L158,97 L158,99 L60,111 Z" fill="#b52b2b" opacity="0.4"/>
+        <path d="M80,110 L140,103 L142,125 L80,128 Z" fill="url(#gripPattern)" opacity="0.7"/>
+        <rect x="95" y="112" width="12" height="4" rx="1" fill="#000" />
+        <rect x="120" y="110" width="15" height="4" rx="1" fill="#000" />
+
+        <path d="M100,75 L155,83 L155,94 L95,85 Z" fill="#1a1a1a" stroke="#000" />
+        <ellipse cx="100" cy="81" rx="6" ry="11" fill="#111" transform="rotate(-7, 100, 81)" stroke="#000"/>
+        <circle cx="125" cy="85" r="2.5" fill="#00ff00" opacity="0.9">
+            <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite" />
+        </circle>
+
+        <path d="M160,95 L260,110 L280,160 L165,135 Z" fill="#8B0000" stroke="#4A0000"/>
+        <path d="M162,97 L258,112 L258,115 L162,100 Z" fill="#b52b2b" opacity="0.5"/>
+        <rect x="190" y="112" width="30" height="10" transform="rotate(8, 190, 112)" fill="#050505" rx="1.5" />
+        <path d="M230,105 L260,110 L255,120 L235,115 Z" fill="#111" />
+    </g>
+</svg>
+        </div>
+
         <div id="ui-menu" class="overlay">
-            <h1 style="color:var(--dark); margin-bottom: 5px; letter-spacing: 1px;">AIM TRAINER PRO</h1>
-            <p style="color:#90a4ae; margin-bottom: 35px;">系统时钟校验已启用</p>
+            <h1 style="color:#eee; margin-bottom: 5px; letter-spacing: 2px;">AIM TRAINER PRO</h1>
+            <p style="color:#90a4ae; margin-bottom: 35px;">CS:GO 右下角视角已启用 | 绿色空心准星</p>
             <div class="menu-buttons">
                 <button class="btn" onclick="start('flick')">🎯 打靶训练 <span>Flick</span></button>
                 <button class="btn btn-secondary" onclick="start('track')">🔫 跟枪训练 <span>Track</span></button>
@@ -183,12 +275,15 @@
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
     const timerBar = document.getElementById('timer-bar');
+    const weaponContainer = document.getElementById('weapon-container');
+    const crosshair = document.getElementById('crosshair');
     
     let gameActive = false;
     let mode = 'flick'; 
     let score = 0, hits = 0, shots = 0, timeLeft = 30;
     let targets = [];
     let realStartTime = 0;
+    const REQUIRED_TIME = 30000; // 30秒的毫秒数
     let mouseX = 0, mouseY = 0;
     const GAME_DURATION = 30;
 
@@ -203,47 +298,30 @@
         constructor(isTracking = false) {
             this.isTracking = isTracking;
             this.r = 0;
-            this.maxR = isTracking ? 28 : Math.random() * 10 + 20;
+            this.maxR = isTracking ? 25 : Math.random() * 10 + 20;
             this.x = Math.random() * (canvas.width - 150) + 75;
             this.y = Math.random() * (canvas.height - 150) + 75;
             this.life = 1.0;
             this.shrinkSpeed = isTracking ? 0 : (0.007 + Math.random() * 0.006);
-            
-            // 初始随机速度向量
             this.vx = (Math.random() - 0.5) * 10;
             this.vy = (Math.random() - 0.5) * 10;
         }
 
         update() {
             if (this.isTracking) {
-                // 完全随机移动算法：每一帧都有概率改变加速度
-                if (Math.random() < 0.12) {
-                    this.vx += (Math.random() - 0.5) * 5;
-                    this.vy += (Math.random() - 0.5) * 5;
+                if (Math.random() < 0.15) {
+                    this.vx += (Math.random() - 0.5) * 4;
+                    this.vy += (Math.random() - 0.5) * 4;
                 }
-
-                // 速度上限控制
-                const maxSpeed = 13;
+                const maxSpeed = 12;
                 const speed = Math.hypot(this.vx, this.vy);
-                if (speed > maxSpeed) {
-                    this.vx = (this.vx / speed) * maxSpeed;
-                    this.vy = (this.vy / speed) * maxSpeed;
-                }
-
-                // 柔性边界逻辑：靠近边缘时产生向心力
+                if (speed > maxSpeed) { this.vx = (this.vx/speed)*maxSpeed; this.vy = (this.vy/speed)*maxSpeed; }
                 const margin = 100;
-                if (this.x < margin) this.vx += 0.9;
-                if (this.x > canvas.width - margin) this.vx -= 0.9;
-                if (this.y < margin) this.vy += 0.9;
-                if (this.y > canvas.height - margin) this.vy -= 0.9;
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // 物理边界硬限制
-                this.x = Math.max(this.r, Math.min(canvas.width - this.r, this.x));
-                this.y = Math.max(this.r, Math.min(canvas.height - this.r, this.y));
-
+                if (this.x < margin) this.vx += 0.8;
+                if (this.x > canvas.width - margin) this.vx -= 0.8;
+                if (this.y < margin) this.vy += 0.8;
+                if (this.y > canvas.height - margin) this.vy -= 0.8;
+                this.x += this.vx; this.y += this.vy;
                 if(this.r < this.maxR) this.r += 2;
             } else {
                 if(this.r < this.maxR) this.r += 2;
@@ -256,15 +334,9 @@
             ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
             ctx.fillStyle = this.isTracking ? `rgba(79, 195, 247, 0.85)` : `rgba(255, 138, 128, ${this.life})`;
             ctx.fill();
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgba(255,255,255,0.8)"; /* 白色轮廓线 */
+            ctx.lineWidth = 1.5;
             ctx.stroke();
-            
-            // 绘制靶心
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.r * 0.3, 0, Math.PI * 2);
-            ctx.fillStyle = "white";
-            ctx.fill();
         }
     }
 
@@ -274,11 +346,11 @@
         targets = [];
         gameActive = true;
         realStartTime = performance.now();
-
         document.getElementById('ui-menu').style.display = 'none';
         document.getElementById('ui-end').style.display = 'none';
         
-        document.getElementById('hits-label').innerText = mode === 'track' ? 'TICKS' : 'HITS';
+        // 游戏时显示自定义准星
+        crosshair.style.display = 'block';
 
         if(mode === 'track') targets.push(new Target(true));
         
@@ -287,62 +359,81 @@
 
     function gameLoop() {
         if (!gameActive) return;
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawGrid();
+        
+        // 绘制 CS:GO 风格深色背景网格
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+        for(let i=0; i<canvas.height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
 
-        // 逻辑时钟更新
         timeLeft -= 1/60;
         timerBar.style.width = (timeLeft / GAME_DURATION) * 100 + '%';
-
         if (timeLeft <= 0) return endGame();
 
         if (mode === 'flick') {
-            if (Math.random() < 0.045 && targets.length < 5) {
-                targets.push(new Target(false));
-            }
+            if (Math.random() < 0.045 && targets.length < 5) targets.push(new Target(false));
         } else {
-            // 跟枪模式每帧判定一次
-            shots++; 
+            shots++;
             const t = targets[0];
-            if (t) {
-                const dist = Math.hypot(t.x - mouseX, t.y - mouseY);
-                if (dist < t.r) {
-                    hits++;
-                    score += 5; // 跟枪得分权重
-                }
-            }
+            if (t && Math.hypot(t.x - mouseX, t.y - mouseY) < t.r) { hits++; score += 5; }
         }
 
         targets = targets.filter(t => t.life > 0);
-        targets.forEach(t => {
-            t.update();
-            t.draw();
-        });
-
+        targets.forEach(t => { t.update(); t.draw(); });
         updateStats();
         requestAnimationFrame(gameLoop);
     }
 
-    // 实时更新鼠标坐标
-    canvas.addEventListener('mousemove', (e) => {
+    // 交互逻辑：准星随动与枪模摇摆
+    window.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
         mouseY = e.clientY - rect.top;
+
+        // --- 关键改动：自定义准星跟随 ---
+        if (gameActive) {
+            // 将准星中心对齐鼠标坐标 (准星宽24px，所以减12)
+            crosshair.style.left = e.clientX - 12 + 'px';
+            crosshair.style.top = e.clientY - 12 + 'px';
+        }
+
+        // --- 枪模随动 (Sway) ---
+        // CS:GO 随动主要是左右轻微摆动
+        if (gameActive) {
+            const swayX = (e.clientX - window.innerWidth / 2) * 0.06;
+            const swayY = (e.clientY - window.innerHeight / 2) * 0.02;
+            weaponContainer.style.transform = `translate(${swayX}px, ${swayY}px) rotate(${swayX * 0.05}deg)`;
+        }
     });
 
     canvas.addEventListener('mousedown', (e) => {
-        if (!gameActive || mode === 'track') return;
+        if (!gameActive) return;
+
+weaponContainer.classList.add('weapon-fire');
+setTimeout(() => weaponContainer.classList.remove('weapon-fire'), 60);
+
+        // --- 关键改动：CS:GO 风格后坐力 (上跳与后震) ---
+        // 瞬间：向上弹起 (translateY) 并向右轻微旋转
+        weaponContainer.style.transition = 'none';
+        weaponContainer.style.transform += ' translate(-8px, -40px) scale(1.04) rotate(-1.5deg)';
         
+        // 随后：平滑回位 (transition 0.3s)
+        setTimeout(() => {
+            weaponContainer.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+            const shiftX = (e.clientX - window.innerWidth / 2) * 0.06;
+            const shiftY = (e.clientY - window.innerHeight / 2) * 0.02;
+            weaponContainer.style.transform = `translate(${shiftX}px, ${shiftY}px) rotate(${shiftX * 0.05}deg)`;
+        }, 50);
+
+        if (mode === 'track') return;
         shots++;
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-
         for(let i = targets.length - 1; i >= 0; i--) {
             const t = targets[i];
-            const dist = Math.hypot(t.x - x, t.y - y);
-            if (dist < t.r) {
+            if (Math.hypot(t.x - x, t.y - y) < t.r) {
                 hits++;
                 score += Math.round(t.life * 100);
                 targets.splice(i, 1);
@@ -351,13 +442,6 @@
             }
         }
     });
-
-    function drawGrid() {
-        ctx.strokeStyle = '#f1f3f4';
-        ctx.lineWidth = 1;
-        for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
-        for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
-    }
 
     function updateStats() {
         document.getElementById('score').innerText = Math.floor(score);
@@ -368,42 +452,31 @@
 
     function endGame() {
         gameActive = false;
-        const realEndTime = performance.now();
-        const actualElapsedSeconds = (realEndTime - realStartTime) / 1000;
-
+const actualElapsed = performance.now() - realStartTime;
         const uiEnd = document.getElementById('ui-end');
-        const rank = document.getElementById('result-rank');
-        const detail = document.getElementById('result-detail');
-        
         uiEnd.style.display = 'flex';
-
-        // 防作弊校验：物理耗时必须与设定耗时接近
-        const tolerance = 3.5; 
-        if (actualElapsedSeconds > (GAME_DURATION + tolerance)) {
-            rank.innerText = "⚠️ 成绩无效";
-            rank.style.color = "#ff8a80";
-            detail.innerHTML = `检测到系统时钟变慢<br>实际耗时: ${actualElapsedSeconds.toFixed(1)}s (预期 30s)<br>请检查是否运行在虚拟机或开启了减速插件`;
-            return;
-        }
-
-        // 正常结算
-        rank.style.color = "var(--primary)";
-        const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
         
-        let rankStr = "描边大师";
-        if (acc > 75 && score > 3000) rankStr = "SSS·独孤求败";
-        else if (acc > 55 && score > 1800) rankStr = "S·神枪手";
-        else if (acc > 30) rankStr = "B·及格";
-        else rankStr = "C·建议多练";
+        // 结算时隐藏准星
+        crosshair.style.display = 'none';
 
-        rank.innerText = rankStr;
-        detail.innerHTML = `模式: ${mode === 'flick' ? '打靶' : '跟枪'}<br>得分: ${score} | 准确率: ${acc}%<br>环境校验: 正常 (物理时间 ${actualElapsedSeconds.toFixed(1)}s)`;
+// 如果物理耗时少于 29.9秒（留0.1秒冗余防止误报），则判定为作弊
+    if (actualElapsed < (REQUIRED_TIME - 100)) {
+        document.getElementById('result-rank').innerText = "❌ 异常检测";
+        document.getElementById('result-detail').innerHTML = 
+            `物理检测未通过！<br>逻辑运行过快，成绩已作废。`;
+        return; // 直接跳出，不执行后面的正常结算
+    }
+        const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+        document.getElementById('result-rank').innerText = acc > 50 ? "RANK: S" : "RANK: B";
+        document.getElementById('result-detail').innerHTML = `得分: ${score} | 准确率: ${acc}%<br>物理时钟校验: 正常`;
     }
 
     function backToMenu() {
         document.getElementById('ui-end').style.display = 'none';
         document.getElementById('ui-menu').style.display = 'flex';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        weaponContainer.style.transform = 'none';
+        crosshair.style.display = 'none';
+        ctx.clearRect(0,0,canvas.width, canvas.height);
     }
 
     function showEffect(x, y, text) {
@@ -416,9 +489,7 @@
         setTimeout(() => el.remove(), 500);
     }
 
-    function exit() {
-        if(confirm("确定要退出并重置吗？")) window.location.reload();
-    }
+    function exit() { if(confirm("确定退出并重置吗？")) window.location.reload(); }
 </script>
 </body>
 </html>
