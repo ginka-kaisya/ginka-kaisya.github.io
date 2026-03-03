@@ -282,7 +282,9 @@
     let mode = 'flick'; 
     let score = 0, hits = 0, shots = 0, timeLeft = 30;
     let targets = [];
-    let realStartTime = 0;
+    let realStartTime = 0; 
+    let combo = 0; // 连击数
+    let maxCombo = 0; // 最高连击
     const REQUIRED_TIME = 30000; // 30秒的毫秒数
     let mouseX = 0, mouseY = 0;
     const GAME_DURATION = 30;
@@ -433,13 +435,28 @@ setTimeout(() => weaponContainer.classList.remove('weapon-fire'), 60);
         const y = e.clientY - rect.top;
         for(let i = targets.length - 1; i >= 0; i--) {
             const t = targets[i];
-            if (Math.hypot(t.x - x, t.y - y) < t.r) {
-                hits++;
-                score += Math.round(t.life * 100);
-                targets.splice(i, 1);
-                showEffect(x, y, "HIT!");
-                return;
-            }
+// 在命中目标的 if 判断内部替换：
+if (Math.hypot(t.x - x, t.y - y) < t.r) {
+    hits++;
+    combo++; // 连击增加
+    if (combo > maxCombo) maxCombo = combo;
+
+    // 评分公式：基础分(50) + 反应奖金(最高100) + 连击加成
+    // t.life 越大代表你反应越快
+    const reactionBonus = Math.round(t.life * 100);
+    const comboBonus = Math.floor(combo / 5) * 10; 
+    const gainedScore = 50 + reactionBonus + comboBonus;
+    
+    score += gainedScore;
+    targets.splice(i, 1);
+    
+    // 飘字效果显示具体加分
+    showEffect(x, y, `+${gainedScore} (x${combo})`);
+    return;
+} else {
+    // 没点中，连击重置
+    combo = 0;
+}
         }
     });
 
@@ -466,10 +483,32 @@ const actualElapsed = performance.now() - realStartTime;
             `物理检测未通过！<br>逻辑运行过快，成绩已作废。`;
         return; // 直接跳出，不执行后面的正常结算
     }
-        const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
-        document.getElementById('result-rank').innerText = acc > 50 ? "RANK: S" : "RANK: B";
-        document.getElementById('result-detail').innerHTML = `得分: ${score} | 准确率: ${acc}%<br>物理时钟校验: 正常`;
-    }
+const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+    
+    // 计算综合评价等级
+    let rank = "D";
+    let color = "#90a4ae";
+    
+    if (acc > 90 && score > 2500) { rank = "S+"; color = "#ff1744"; }
+    else if (acc > 80 && score > 2000) { rank = "S"; color = "#ff5252"; }
+    else if (acc > 70 && score > 1500) { rank = "A"; color = "#ffab40"; }
+    else if (acc > 60 && score > 1000) { rank = "B"; color = "#4fc3f7"; }
+    else { rank = "C"; color = "#81c784"; }
+
+    const rankEl = document.getElementById('result-rank');
+    rankEl.innerText = `RANK: ${rank}`;
+    rankEl.style.color = color;
+
+    document.getElementById('result-detail').innerHTML = `
+        <div style="text-align:left; display:inline-block; font-family:monospace;">
+            总分: ${Math.floor(score)}<br>
+            准确率: ${acc}%<br>
+            命中数: ${hits}<br>
+            最高连击: ${maxCombo}<br>
+            物理校验: 正常
+        </div>
+    `;
+}
 
     function backToMenu() {
         document.getElementById('ui-end').style.display = 'none';
