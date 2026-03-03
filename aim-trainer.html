@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打靶训练 Pro - 安全加强版</title>
+    <title>打靶训练 Pro - 最终加强版</title>
     <style>
         :root {
             --primary: #81c784;
-            --accent: #ff8a80;
+            --accent: #4fc3f7;
             --dark: #37474f;
-            --glass: rgba(255, 255, 255, 0.92);
+            --glass: rgba(255, 255, 255, 0.95);
             --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
         }
 
@@ -27,12 +27,12 @@
 
         .game-wrapper {
             width: 95vw;
-            max-width: 1100px;
+            max-width: 1000px;
             background: var(--glass);
             backdrop-filter: blur(25px);
-            border-radius: 40px;
-            padding: 30px;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.12);
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.7);
             position: relative;
         }
@@ -40,50 +40,48 @@
         .dashboard {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .stat-card {
-            background: rgba(255,255,255,0.5);
-            padding: 15px;
-            border-radius: 20px;
+            background: rgba(255,255,255,0.6);
+            padding: 12px;
+            border-radius: 15px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.5);
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
-        .stat-label { font-size: 0.8rem; color: #78909c; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--dark); margin-top: 5px; }
+        .stat-label { font-size: 0.7rem; color: #90a4ae; text-transform: uppercase; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--dark); }
 
         .timer-container {
             grid-column: span 3;
-            height: 8px;
+            height: 6px;
             background: #eceff1;
             border-radius: 10px;
             overflow: hidden;
-            margin-top: 10px;
         }
 
         #timer-bar {
             height: 100%;
             width: 100%;
-            background: linear-gradient(90deg, var(--primary), #4fc3f7);
+            background: linear-gradient(90deg, var(--primary), var(--accent));
             transition: width 0.1s linear;
         }
 
         .canvas-area {
             position: relative;
-            background: #fdfdfd;
-            border-radius: 25px;
+            background: #fff;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: inset 0 5px 15px rgba(0,0,0,0.03);
-            border: 2px solid #eaeeef;
+            border: 2px solid #f0f4f5;
         }
 
         #game-canvas {
             display: block;
             width: 100%;
-            height: 550px;
+            height: 500px;
         }
 
         .overlay {
@@ -93,274 +91,334 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.92);
             z-index: 100;
-            border-radius: 25px;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
 
-        .btn-start {
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 280px;
+        }
+
+        .btn {
             background: var(--dark);
             color: white;
             border: none;
-            padding: 18px 50px;
-            border-radius: 50px;
-            font-size: 1.4rem;
-            font-weight: bold;
+            padding: 16px 30px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .btn-start:hover { transform: scale(1.05) translateY(-3px); background: #263238; }
-
-        .back-home {
-            position: absolute;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #546e7a;
-            text-decoration: none;
-            font-size: 0.9rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 5px;
-            opacity: 0.8;
         }
+
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); filter: brightness(1.2); }
+        .btn-secondary { background: #546e7a; }
+        .btn-outline { background: transparent; color: #90a4ae; border: 1px solid #cfd8dc; justify-content: center; }
 
         .combo-text {
             position: absolute;
             pointer-events: none;
             color: var(--primary);
             font-weight: bold;
-            font-style: italic;
             z-index: 10;
-            animation: floatUp 0.6s ease-out forwards;
+            animation: floatUp 0.5s ease-out forwards;
         }
 
         @keyframes floatUp {
-            from { opacity: 1; transform: translate(-50%, 0) scale(1.2); }
+            from { opacity: 1; transform: translate(-50%, 0) scale(1.3); }
             to { opacity: 0; transform: translate(-50%, -40px) scale(1); }
         }
     </style>
 </head>
 <body>
 
-    <div class="game-wrapper">
-        <div class="dashboard">
-            <div class="stat-card">
-                <div class="stat-label">SCORE</div>
-                <div id="score" class="stat-value">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">ACCURACY</div>
-                <div id="accuracy" class="stat-value">100%</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">HITS</div>
-                <div id="hits" class="stat-value">0</div>
-            </div>
-            <div class="timer-container">
-                <div id="timer-bar"></div>
-            </div>
+<div class="game-wrapper">
+    <div class="dashboard">
+        <div class="stat-card">
+            <div class="stat-label">SCORE</div>
+            <div id="score" class="stat-value">0</div>
         </div>
-
-        <div class="canvas-area">
-            <canvas id="game-canvas"></canvas>
-            
-            <div id="ui-start" class="overlay">
-                <h1 style="color:var(--dark); font-size: 2.5rem; margin-bottom: 30px;">READY TO AIM?</h1>
-                <button class="btn-start" onclick="startGame()">START TRAINING</button>
-            </div>
-
-            <div id="ui-end" class="overlay" style="display: none;">
-                <h1 id="result-title" style="color:var(--primary); margin-bottom: 10px;">EXCELLENT!</h1>
-                <p id="result-score" style="font-size: 2rem; font-weight: bold; margin: 10px 0;"></p>
-                <p id="result-accuracy" style="color: #78909c; margin-bottom: 30px;"></p>
-                <button class="btn-start" onclick="startGame()">TRY AGAIN</button>
-            </div>
+        <div class="stat-card">
+            <div class="stat-label">ACCURACY</div>
+            <div id="accuracy" class="stat-value">100%</div>
         </div>
-
-        <a href="#" class="back-home">🏠 返回游戏中心</a>
+        <div class="stat-card">
+            <div class="stat-label" id="hits-label">HITS</div>
+            <div id="hits" class="stat-value">0</div>
+        </div>
+        <div class="timer-container">
+            <div id="timer-bar"></div>
+        </div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const timerBar = document.getElementById('timer-bar');
+    <div class="canvas-area">
+        <canvas id="game-canvas"></canvas>
         
-        let score = 0, hits = 0, shots = 0, timeLeft = 30;
-        let gameActive = false;
-        let targets = [];
+        <div id="ui-menu" class="overlay">
+            <h1 style="color:var(--dark); margin-bottom: 5px; letter-spacing: 1px;">AIM TRAINER PRO</h1>
+            <p style="color:#90a4ae; margin-bottom: 35px;">系统时钟校验已启用</p>
+            <div class="menu-buttons">
+                <button class="btn" onclick="start('flick')">🎯 打靶训练 <span>Flick</span></button>
+                <button class="btn btn-secondary" onclick="start('track')">🔫 跟枪训练 <span>Track</span></button>
+                <button class="btn btn-outline" onclick="exit()">退出游戏</button>
+            </div>
+        </div>
 
-        // --- 防作弊：真实时间盾 ---
-        let realStartTime = 0;
-        const GAME_DURATION = 30; // 游戏设定秒数
+        <div id="ui-end" class="overlay" style="display: none;">
+            <h2 id="result-rank" style="font-size: 2.8rem; margin-bottom: 5px;"></h2>
+            <p id="result-detail" style="color: #78909c; line-height: 1.6; margin-bottom: 30px; text-align: center;"></p>
+            <button class="btn" style="width: 200px; justify-content: center;" onclick="backToMenu()">返回主菜单</button>
+        </div>
+    </div>
+</div>
 
-        function resize() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+<script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const timerBar = document.getElementById('timer-bar');
+    
+    let gameActive = false;
+    let mode = 'flick'; 
+    let score = 0, hits = 0, shots = 0, timeLeft = 30;
+    let targets = [];
+    let realStartTime = 0;
+    let mouseX = 0, mouseY = 0;
+    const GAME_DURATION = 30;
+
+    function resize() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Target {
+        constructor(isTracking = false) {
+            this.isTracking = isTracking;
+            this.r = 0;
+            this.maxR = isTracking ? 28 : Math.random() * 10 + 20;
+            this.x = Math.random() * (canvas.width - 150) + 75;
+            this.y = Math.random() * (canvas.height - 150) + 75;
+            this.life = 1.0;
+            this.shrinkSpeed = isTracking ? 0 : (0.007 + Math.random() * 0.006);
+            
+            // 初始随机速度向量
+            this.vx = (Math.random() - 0.5) * 10;
+            this.vy = (Math.random() - 0.5) * 10;
         }
-        window.addEventListener('resize', resize);
-        resize();
 
-        class Target {
-            constructor() {
-                this.r = 0; 
-                this.maxR = Math.random() * 15 + 20;
-                this.x = Math.random() * (canvas.width - this.maxR * 2) + this.maxR;
-                this.y = Math.random() * (canvas.height - this.maxR * 2) + this.maxR;
-                this.life = 1.0; 
-                this.shrinkSpeed = 0.008 + Math.random() * 0.005;
-            }
+        update() {
+            if (this.isTracking) {
+                // 完全随机移动算法：每一帧都有概率改变加速度
+                if (Math.random() < 0.12) {
+                    this.vx += (Math.random() - 0.5) * 5;
+                    this.vy += (Math.random() - 0.5) * 5;
+                }
 
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 138, 128, ${this.life})`;
-                ctx.fill();
-                
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.r * 0.4, 0, Math.PI * 2);
-                ctx.fillStyle = 'white';
-                ctx.fill();
+                // 速度上限控制
+                const maxSpeed = 13;
+                const speed = Math.hypot(this.vx, this.vy);
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
+                }
 
+                // 柔性边界逻辑：靠近边缘时产生向心力
+                const margin = 100;
+                if (this.x < margin) this.vx += 0.9;
+                if (this.x > canvas.width - margin) this.vx -= 0.9;
+                if (this.y < margin) this.vy += 0.9;
+                if (this.y > canvas.height - margin) this.vy -= 0.9;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 物理边界硬限制
+                this.x = Math.max(this.r, Math.min(canvas.width - this.r, this.x));
+                this.y = Math.max(this.r, Math.min(canvas.height - this.r, this.y));
+
+                if(this.r < this.maxR) this.r += 2;
+            } else {
                 if(this.r < this.maxR) this.r += 2;
                 this.life -= this.shrinkSpeed;
             }
         }
 
-        function startGame() {
-            score = 0; hits = 0; shots = 0; timeLeft = GAME_DURATION;
-            targets = []; 
-            gameActive = true;
-
-            // 记录真实的物理开始时间 (ms)
-            realStartTime = performance.now();
-
-            document.getElementById('ui-start').style.display = 'none';
-            document.getElementById('ui-end').style.display = 'none';
-            updateStats();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function updateStats() {
-            document.getElementById('score').innerText = score;
-            document.getElementById('hits').innerText = hits;
-            const acc = shots === 0 ? 100 : Math.round((hits / shots) * 100);
-            document.getElementById('accuracy').innerText = acc + '%';
-        }
-
-        function gameLoop() {
-            if (!gameActive) return;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawGrid();
-
-            // 这里的时间是逻辑时间
-            timeLeft -= 1/60;
-            timerBar.style.width = (timeLeft / GAME_DURATION) * 100 + '%';
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fillStyle = this.isTracking ? `rgba(79, 195, 247, 0.85)` : `rgba(255, 138, 128, ${this.life})`;
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 3;
+            ctx.stroke();
             
-            if (timeLeft <= 0) return endGame();
-
-            if (Math.random() < 0.03 && targets.length < 5) {
-                targets.push(new Target());
-            }
-
-            targets = targets.filter(t => t.life > 0);
-            targets.forEach(t => t.draw());
-
-            requestAnimationFrame(gameLoop);
+            // 绘制靶心
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
         }
+    }
 
-        function drawGrid() {
-            ctx.strokeStyle = '#f0f0f0';
-            ctx.lineWidth = 1;
-            for(let i=0; i<canvas.width; i+=40) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    function start(selectedMode) {
+        mode = selectedMode;
+        score = 0; hits = 0; shots = 0; timeLeft = GAME_DURATION;
+        targets = [];
+        gameActive = true;
+        realStartTime = performance.now();
+
+        document.getElementById('ui-menu').style.display = 'none';
+        document.getElementById('ui-end').style.display = 'none';
+        
+        document.getElementById('hits-label').innerText = mode === 'track' ? 'TICKS' : 'HITS';
+
+        if(mode === 'track') targets.push(new Target(true));
+        
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop() {
+        if (!gameActive) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+
+        // 逻辑时钟更新
+        timeLeft -= 1/60;
+        timerBar.style.width = (timeLeft / GAME_DURATION) * 100 + '%';
+
+        if (timeLeft <= 0) return endGame();
+
+        if (mode === 'flick') {
+            if (Math.random() < 0.045 && targets.length < 5) {
+                targets.push(new Target(false));
             }
-            for(let i=0; i<canvas.height; i+=40) {
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-            }
-        }
-
-        function endGame() {
-            gameActive = false;
-            
-            // --- 校验逻辑：对比真实物理耗时 ---
-            const realEndTime = performance.now();
-            const actualElapsedSeconds = (realEndTime - realStartTime) / 1000;
-            
-            const uiEnd = document.getElementById('ui-end');
-            const resTitle = document.getElementById('result-title');
-            const resScore = document.getElementById('result-score');
-            const resAcc = document.getElementById('result-accuracy');
-            
-            uiEnd.style.display = 'flex';
-
-            // 如果物理耗时 远大于 游戏设定时长，说明开启了虚拟机减速或倍率插件
-            // 允许 5 秒的误差（处理加载卡顿或低性能设备）
-            if (actualElapsedSeconds > (GAME_DURATION + 5)) {
-                resTitle.innerText = "检测到环境异常";
-                resTitle.style.color = "#000";
-                resScore.innerText = "成绩已被作废";
-                resAcc.innerText = "原因：检测到系统时钟篡改（变速作弊）";
-                return;
-            }
-
-            resScore.innerText = `SCORE: ${score}`;
-            const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
-            resAcc.innerText = `准确率: ${acc}% | 击中数: ${hits}`;
-
-            let rank = "", rankColor = "", comment = "";
-            if (score >= 4500 && acc >= 95) {
-                rank = "SSS · 广工独孤求败"; rankColor = "#ff1744"; comment = "反应已经超越人类极限！";
-            } else if (score >= 2500 && acc >= 80) {
-                rank = "S · 宿舍战神"; rankColor = "#f50057"; comment = "整个宿舍楼没人敢跟你对狙。";
-            } else if (score >= 1000 && acc >= 50) {
-                rank = "B · 及格边缘"; rankColor = "#00b0ff"; comment = "还有进步空间，多练练手速。";
-            } else {
-                rank = "C · 人体描边大师"; rankColor = "#78909c"; comment = "你是在给靶子做按摩吗？";
-            }
-
-            resTitle.innerText = rank;
-            resTitle.style.color = rankColor;
-            resAcc.innerHTML += `<br><span style="color:${rankColor}; font-style:italic;">"${comment}"</span>`;
-        }
-
-        canvas.addEventListener('mousedown', (e) => {
-            if (!gameActive) return;
-            shots++;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            let isHit = false;
-            for(let i = targets.length - 1; i >= 0; i--) {
-                const t = targets[i];
-                const dist = Math.hypot(t.x - x, t.y - y);
+        } else {
+            // 跟枪模式每帧判定一次
+            shots++; 
+            const t = targets[0];
+            if (t) {
+                const dist = Math.hypot(t.x - mouseX, t.y - mouseY);
                 if (dist < t.r) {
                     hits++;
-                    score += Math.round(t.life * 100);
-                    targets.splice(i, 1);
-                    isHit = true;
-                    showComboEffect(x, y, "HIT!");
-                    break;
+                    score += 5; // 跟枪得分权重
                 }
             }
-            updateStats();
+        }
+
+        targets = targets.filter(t => t.life > 0);
+        targets.forEach(t => {
+            t.update();
+            t.draw();
         });
 
-        function showComboEffect(x, y, text) {
-            const el = document.createElement('div');
-            el.className = 'combo-text';
-            el.innerText = text;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            document.querySelector('.canvas-area').appendChild(el);
-            setTimeout(() => el.remove(), 600);
+        updateStats();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // 实时更新鼠标坐标
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (!gameActive || mode === 'track') return;
+        
+        shots++;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        for(let i = targets.length - 1; i >= 0; i--) {
+            const t = targets[i];
+            const dist = Math.hypot(t.x - x, t.y - y);
+            if (dist < t.r) {
+                hits++;
+                score += Math.round(t.life * 100);
+                targets.splice(i, 1);
+                showEffect(x, y, "HIT!");
+                return;
+            }
         }
-    </script>
+    });
+
+    function drawGrid() {
+        ctx.strokeStyle = '#f1f3f4';
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+        for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+    }
+
+    function updateStats() {
+        document.getElementById('score').innerText = Math.floor(score);
+        document.getElementById('hits').innerText = hits;
+        const acc = shots === 0 ? 100 : Math.round((hits / shots) * 100);
+        document.getElementById('accuracy').innerText = acc + '%';
+    }
+
+    function endGame() {
+        gameActive = false;
+        const realEndTime = performance.now();
+        const actualElapsedSeconds = (realEndTime - realStartTime) / 1000;
+
+        const uiEnd = document.getElementById('ui-end');
+        const rank = document.getElementById('result-rank');
+        const detail = document.getElementById('result-detail');
+        
+        uiEnd.style.display = 'flex';
+
+        // 防作弊校验：物理耗时必须与设定耗时接近
+        const tolerance = 3.5; 
+        if (actualElapsedSeconds > (GAME_DURATION + tolerance)) {
+            rank.innerText = "⚠️ 成绩无效";
+            rank.style.color = "#ff8a80";
+            detail.innerHTML = `检测到系统时钟变慢<br>实际耗时: ${actualElapsedSeconds.toFixed(1)}s (预期 30s)<br>请检查是否运行在虚拟机或开启了减速插件`;
+            return;
+        }
+
+        // 正常结算
+        rank.style.color = "var(--primary)";
+        const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+        
+        let rankStr = "描边大师";
+        if (acc > 75 && score > 3000) rankStr = "SSS·独孤求败";
+        else if (acc > 55 && score > 1800) rankStr = "S·神枪手";
+        else if (acc > 30) rankStr = "B·及格";
+        else rankStr = "C·建议多练";
+
+        rank.innerText = rankStr;
+        detail.innerHTML = `模式: ${mode === 'flick' ? '打靶' : '跟枪'}<br>得分: ${score} | 准确率: ${acc}%<br>环境校验: 正常 (物理时间 ${actualElapsedSeconds.toFixed(1)}s)`;
+    }
+
+    function backToMenu() {
+        document.getElementById('ui-end').style.display = 'none';
+        document.getElementById('ui-menu').style.display = 'flex';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function showEffect(x, y, text) {
+        const el = document.createElement('div');
+        el.className = 'combo-text';
+        el.innerText = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        document.querySelector('.canvas-area').appendChild(el);
+        setTimeout(() => el.remove(), 500);
+    }
+
+    function exit() {
+        if(confirm("确定要退出并重置吗？")) window.location.reload();
+    }
+</script>
 </body>
 </html>
