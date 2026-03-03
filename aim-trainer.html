@@ -1,178 +1,162 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打靶训练 Pro - CS:GO 视角版</title>
-    <style>
-        :root { --primary: #81c784; --accent: #4fc3f7; --dark: #37474f; --glass: rgba(255, 255, 255, 0.95); --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%); --crosshair-color: #00ff00; }
-        body { margin: 0; font-family: 'PingFang SC', 'Helvetica Neue', sans-serif; background: var(--bg-gradient); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; cursor: none; }
-        .weapon-fire { filter: drop-shadow(0 30px 60px rgba(0,0,0,0.7)) brightness(1.6) !important; }
-        .game-wrapper { width: 95vw; max-width: 1000px; background: var(--glass); backdrop-filter: blur(25px); border-radius: 30px; padding: 25px; box-shadow: 0 40px 100px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.7); position: relative; }
-        .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; cursor: default; }
-        .stat-card { background: rgba(255,255,255,0.6); padding: 12px; border-radius: 15px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
-        .stat-label { font-size: 0.7rem; color: #90a4ae; text-transform: uppercase; }
-        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--dark); }
-        .timer-container { grid-column: span 3; height: 6px; background: #eceff1; border-radius: 10px; overflow: hidden; }
-        #timer-bar { height: 100%; width: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.1s linear; }
-        .canvas-area { position: relative; background: #1a1a1a; border-radius: 20px; overflow: hidden; border: 2px solid #333; }
-        #game-canvas { display: block; width: 100%; height: 550px; }
-        #weapon-container { position: absolute; bottom: -50px; right: 2%; width: 550px; height: 350px; pointer-events: none; z-index: 50; transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1); filter: drop-shadow(0 30px 50px rgba(0,0,0,0.6)); }
-        #crosshair { position: absolute; width: 24px; height: 24px; pointer-events: none; z-index: 200; display: none; }
-        .ch-line { position: absolute; background-color: var(--crosshair-color); border-radius: 1px; }
-        .ch-v { width: 2px; height: 20px; left: 11px; top: 2px; }
-        .ch-h { width: 20px; height: 2px; top: 11px; left: 2px; }
-        .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(26, 26, 26, 0.95); z-index: 100; backdrop-filter: blur(10px); cursor: default; }
-        .menu-buttons { display: flex; flex-direction: column; gap: 15px; width: 280px; }
-        .btn { background: #333; color: white; border: none; padding: 16px 30px; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); background: #444; border-color: var(--primary); }
-        .btn-outline { background: transparent; color: #90a4ae; border: 1px solid #444; justify-content: center; }
-        .combo-text { position: absolute; pointer-events: none; color: var(--primary); font-weight: bold; z-index: 10; animation: floatUp 0.5s ease-out forwards; }
-        @keyframes floatUp { from { opacity: 1; transform: translate(-50%, 0) scale(1.3); } to { opacity: 0; transform: translate(-50%, -40px) scale(1); } }
-    </style>
-</head>
-<body>
+<script type="module">
+    import { GameConfig, Target, calculateHitScore } from './api/game-config.js';
 
-<div id="crosshair">
-    <div class="ch-line ch-v"></div>
-    <div class="ch-line ch-h"></div>
-</div>
-
-<div class="game-wrapper">
-    <div class="dashboard">
-        <div class="stat-card"><div class="stat-label">SCORE</div><div id="score" class="stat-value">0</div></div>
-        <div class="stat-card"><div class="stat-label">ACCURACY</div><div id="accuracy" class="stat-value">100%</div></div>
-        <div class="stat-card"><div class="stat-label">HITS</div><div id="hits" class="stat-value">0</div></div>
-        <div class="timer-container"><div id="timer-bar"></div></div>
-    </div>
-
-    <div class="canvas-area">
-        <canvas id="game-canvas"></canvas>
-        <div id="weapon-container">
-            <svg viewBox="0 0 300 150" width="100%" height="100%">
-                <defs>
-                    <linearGradient id="crimsonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style="stop-color:#8B0000;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#4A0000;stop-opacity:1" />
-                    </linearGradient>
-                </defs>
-                <g filter="drop-shadow(3px 5px 4px rgba(0,0,0,0.6))">
-                    <path d="M58,108 L160,95 L165,135 L58,122 Z" fill="url(#crimsonGradient)" stroke="#3a0000" stroke-width="0.5"/>
-                    <path d="M100,75 L155,83 L155,94 L95,85 Z" fill="#1a1a1a" stroke="#000" />
-                    <circle cx="125" cy="85" r="2.5" fill="#00ff00" opacity="0.9"><animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite" /></circle>
-                    <path d="M160,95 L260,110 L280,160 L165,135 Z" fill="#8B0000" stroke="#4A0000"/>
-                </g>
-            </svg>
-        </div>
-
-        <div id="ui-menu" class="overlay">
-            <h1 style="color:#eee; margin-bottom: 5px; letter-spacing: 2px;">AIM TRAINER PRO</h1>
-            <p style="color:#90a4ae; margin-bottom: 35px;">CS:GO 视角混淆版已激活</p>
-            <div class="menu-buttons">
-                <button class="btn" onclick="start('flick')">🎯 打靶训练 <span>Flick</span></button>
-                <button class="btn" onclick="start('track')">🔫 跟枪训练 <span>Track</span></button>
-            </div>
-        </div>
-
-        <div id="ui-end" class="overlay" style="display: none;">
-            <h2 id="result-rank" style="font-size: 2.8rem; margin-bottom: 5px;"></h2>
-            <p id="result-detail" style="color: #78909c; text-align: center; margin-bottom: 30px;"></p>
-            <button class="btn" style="width: 200px; justify-content: center;" onclick="location.reload()">重新开始</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    // 逻辑混淆数组
-    const _0xS = ["getElementById", "game-canvas", "timer-bar", "weapon-container", "crosshair", "ui-menu", "ui-end", "display", "none", "flex", "block", "score", "accuracy", "hits", "result-rank", "result-detail", "weapon-fire"];
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const timerBar = document.getElementById('timer-bar');
+    const weaponContainer = document.getElementById('weapon-container');
+    const crosshair = document.getElementById('crosshair');
     
-    let _gA = false, _m = 'flick', _s = 0, _h = 0, _sh = 0, _tl = 30, _ts = [], _rS = 0, _co = 0, _mc = 0, _mx = 0, _my = 0;
-    const _cv = document[_0xS[0]](_0xS[1]), _ctx = _cv.getContext('2d');
-    const _tb = document[_0xS[0]](_0xS[2]), _wc = document[_0xS[0]](_0xS[3]), _ch = document[_0xS[0]](_0xS[4]);
+    let gameActive = false;
+    let mode = 'flick'; 
+    let score = 0, hits = 0, shots = 0, timeLeft = GameConfig.DURATION;
+    let targets = [];
+    let realStartTime = 0; 
+    let combo = 0;
+    let maxCombo = 0;
+    let mouseX = 0, mouseY = 0;
 
-    function resize() { _cv.width = _cv.offsetWidth; _cv.height = _cv.offsetHeight; }
-    window.addEventListener('resize', resize); resize();
+    // 将函数绑定到 window 以便 HTML 中的 onclick 能访问（或者改用 addEventListener）
+    window.start = (selectedMode) => {
+        mode = selectedMode;
+        score = 0; hits = 0; shots = 0; timeLeft = GameConfig.DURATION;
+        targets = [];
+        gameActive = true;
+        realStartTime = performance.now();
+        document.getElementById('ui-menu').style.display = 'none';
+        document.getElementById('ui-end').style.display = 'none';
+        crosshair.style.display = 'block';
+        if(mode === 'track') targets.push(new Target(canvas.width, canvas.height, true));
+        requestAnimationFrame(gameLoop);
+    };
 
-    class _0xTarget {
-        constructor(isT) {
-            this.isT = isT; this.r = 0; this.mR = isT ? 25 : Math.random() * 10 + 20;
-            this.x = Math.random() * (_cv.width - 150) + 75; this.y = Math.random() * (_cv.height - 150) + 75;
-            this.l = 1.0; this.vX = (Math.random() - 0.5) * 10; this.vY = (Math.random() - 0.5) * 10;
+    function gameLoop() {
+        if (!gameActive) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 绘制背景网格
+        ctx.strokeStyle = '#222';
+        for(let i=0; i<canvas.width; i+=GameConfig.GRID_SIZE) { 
+            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); 
         }
-        update() {
-            if (this.isT) {
-                this.x += this.vX; this.y += this.vY;
-                if (this.x < 50 || this.x > _cv.width - 50) this.vX *= -1;
-                if (this.y < 50 || this.y > _cv.height - 50) this.vY *= -1;
-                this.r < this.mR && (this.r += 2);
-            } else { this.r < this.mR && (this.r += 2); this.l -= 0.01; }
+        for(let i=0; i<canvas.height; i+=GameConfig.GRID_SIZE) { 
+            ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); 
         }
-        draw() {
-            _ctx.beginPath(); _ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-            _ctx.fillStyle = this.isT ? `rgba(79, 195, 247, 0.85)` : `rgba(255, 138, 128, ${this.l})`;
-            _ctx.fill(); _ctx.strokeStyle = "#fff"; _ctx.stroke();
+
+        timeLeft -= 1/60;
+        timerBar.style.width = (timeLeft / GameConfig.DURATION) * 100 + '%';
+        if (timeLeft <= 0) return endGame();
+
+        if (mode === 'flick') {
+            if (Math.random() < GameConfig.FLICK_SPAWN_CHANCE && targets.length < GameConfig.MAX_TARGETS) {
+                targets.push(new Target(canvas.width, canvas.height, false));
+            }
+        } else {
+            shots++;
+            const t = targets[0];
+            if (t && Math.hypot(t.x - mouseX, t.y - mouseY) < t.r) { hits++; score += 5; }
         }
+
+        targets = targets.filter(t => t.life > 0);
+        targets.forEach(t => { 
+            t.update(canvas.width, canvas.height); 
+            t.draw(ctx); 
+        });
+        updateStats();
+        requestAnimationFrame(gameLoop);
     }
 
-    function start(mode) {
-        _m = mode; _s = 0; _h = 0; _sh = 0; _tl = 30; _ts = []; _gA = true; _rS = performance.now();
-        document[_0xS[0]](_0xS[5])[_0xS[3]].display = _0xS[8];
-        _ch[_0xS[3]].display = _0xS[10];
-        if (_m === 'track') _ts.push(new _0xTarget(true));
-        requestAnimationFrame(_0xLoop);
-    }
-
-    function _0xLoop() {
-        if (!_gA) return;
-        _ctx.clearRect(0, 0, _cv.width, _cv.height);
-        _tl -= 1 / 60; _tb[_0xS[3]].width = (_tl / 30) * 100 + '%';
-        if (_tl <= 0) return _0xEnd();
-        if (_m === 'flick') { if (Math.random() < 0.045 && _ts.length < 5) _ts.push(new _0xTarget(false)); } 
-        else { _sh++; let t = _ts[0]; if (t && Math.hypot(t.x - _mx, t.y - _my) < t.r) { _h++; _s += 5; } }
-        _ts = _ts.filter(t => t.l > 0); _ts.forEach(t => { t.update(); t.draw(); });
-        _0xUpdateUI(); requestAnimationFrame(_0xLoop);
-    }
-
+    // 鼠标交互
     window.addEventListener('mousemove', (e) => {
-        const r = _cv.getBoundingClientRect(); _mx = e.clientX - r.left; _my = e.clientY - r.top;
-        if (_gA) {
-            _ch[_0xS[3]].left = e.clientX - 12 + 'px'; _ch[_0xS[3]].top = e.clientY - 12 + 'px';
-            _wc[_0xS[3]].transform = `translate(${(e.clientX - window.innerWidth / 2) * 0.05}px, 0)`;
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+
+        if (gameActive) {
+            crosshair.style.left = e.clientX - 12 + 'px';
+            crosshair.style.top = e.clientY - 12 + 'px';
+            const swayX = (e.clientX - window.innerWidth / 2) * GameConfig.SWAY_INTENSITY_X;
+            const swayY = (e.clientY - window.innerHeight / 2) * GameConfig.SWAY_INTENSITY_Y;
+            weaponContainer.style.transform = `translate(${swayX}px, ${swayY}px) rotate(${swayX * 0.05}deg)`;
         }
     });
 
-    _cv.addEventListener('mousedown', (e) => {
-        if (!_gA || _m === 'track') return;
-        _sh++; _wc.classList.add(_0xS[16]); setTimeout(() => _wc.classList.remove(_0xS[16]), 60);
-        for (let i = _ts.length - 1; i >= 0; i--) {
-            let t = _ts[i];
-            if (Math.hypot(t.x - _mx, t.y - _my) < t.r) {
-                _h++; _co++; _s += (50 + _co * 10); _ts.splice(i, 1);
-                showEffect(_mx, _my, `+${50 + _co * 10}`); return;
+    canvas.addEventListener('mousedown', (e) => {
+        if (!gameActive) return;
+        
+        // 开火视觉
+        weaponContainer.classList.add('weapon-fire');
+        setTimeout(() => weaponContainer.classList.remove('weapon-fire'), 60);
+
+        weaponContainer.style.transition = 'none';
+        weaponContainer.style.transform += ' translate(-8px, -40px) scale(1.04) rotate(-1.5deg)';
+        
+        setTimeout(() => {
+            weaponContainer.style.transition = `transform ${GameConfig.RECOIL_DURATION}ms cubic-bezier(0.18, 0.89, 0.32, 1.28)`;
+            const shiftX = (e.clientX - window.innerWidth / 2) * GameConfig.SWAY_INTENSITY_X;
+            const shiftY = (e.clientY - window.innerHeight / 2) * GameConfig.SWAY_INTENSITY_Y;
+            weaponContainer.style.transform = `translate(${shiftX}px, ${shiftY}px) rotate(${shiftX * 0.05}deg)`;
+        }, 50);
+
+        if (mode === 'track') return;
+        shots++;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        for(let i = targets.length - 1; i >= 0; i--) {
+            const t = targets[i];
+            if (Math.hypot(t.x - x, t.y - y) < t.r) {
+                hits++;
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+                const gained = calculateHitScore(t, combo);
+                score += gained;
+                targets.splice(i, 1);
+                showEffect(x, y, `+${gained} (x${combo})`);
+                return;
             }
         }
-        _co = 0;
+        combo = 0;
     });
 
-    function _0xUpdateUI() {
-        document[_0xS[0]](_0xS[11]).innerText = Math.floor(_s);
-        document[_0xS[0]](_0xS[13]).innerText = _h;
-        document[_0xS[0]](_0xS[12]).innerText = (_sh === 0 ? 100 : Math.round(_h / _sh * 100)) + '%';
+    function updateStats() {
+        document.getElementById('score').innerText = Math.floor(score);
+        document.getElementById('hits').innerText = hits;
+        const acc = shots === 0 ? 100 : Math.round((hits / shots) * 100);
+        document.getElementById('accuracy').innerText = acc + '%';
     }
 
-    function _0xEnd() {
-        _gA = false; _ch[_0xS[3]].display = _0xS[8];
-        document[_0xS[0]](_0xS[6])[_0xS[3]].display = _0xS[9];
-        document[_0xS[0]](_0xS[14]).innerText = "RANK: " + (_s > 2000 ? "S" : "A");
-        document[_0xS[0]](_0xS[15]).innerText = "最终得分: " + Math.floor(_s);
+    function endGame() {
+        gameActive = false;
+        const actualElapsed = performance.now() - realStartTime;
+        const uiEnd = document.getElementById('ui-end');
+        uiEnd.style.display = 'flex';
+        crosshair.style.display = 'none';
+
+        if (actualElapsed < (GameConfig.REQUIRED_TIME_MS - 100)) {
+            document.getElementById('result-rank').innerText = "❌ 异常检测";
+            return;
+        }
+
+        const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+        const { rank, color } = GameConfig.getRanks(score, acc);
+        
+        const rankEl = document.getElementById('result-rank');
+        rankEl.innerText = `RANK: ${rank}`;
+        rankEl.style.color = color;
+        document.getElementById('result-detail').innerHTML = `
+            总分: ${Math.floor(score)} | 准确率: ${acc}% | 最高连击: ${maxCombo}
+        `;
     }
 
-    function showEffect(x, y, txt) {
-        const el = document.createElement('div'); el.className = 'combo-text'; el.innerText = txt;
-        el.style.left = x + 'px'; el.style.top = y + 'px';
+    function showEffect(x, y, text) {
+        const el = document.createElement('div');
+        el.className = 'combo-text';
+        el.innerText = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
         document.querySelector('.canvas-area').appendChild(el);
         setTimeout(() => el.remove(), 500);
     }
 </script>
-</body>
-</html>
