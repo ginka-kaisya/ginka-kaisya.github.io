@@ -1,84 +1,121 @@
-/**
- * 射击训练营 Pro - 核心逻辑与配置 API
- */
+// server.js
+const express = require('express');
+const app = express();
+app.use(express.json());
 
-export const GameConfig = {
-    DURATION: 30, // 游戏时长（秒）
-    REQUIRED_TIME_MS: 30000,
-    SWAY_INTENSITY_X: 0.06,
-    SWAY_INTENSITY_Y: 0.02,
-    RECOIL_DURATION: 300,
-    GRID_SIZE: 50,
+// 内存存储游戏会话（生产环境建议使用 Redis）
+const sessions = {};
+
+// 1. 初始化游戏
+app.post('/api/game/start', (req, res) => {
+    const sessionId = Math.random().toString(36).substring(7);
+    const mode = req.body.mode || 'flick';
     
-    // 目标生成参数
-    FLICK_SPAWN_CHANCE: 0.045,
-    MAX_TARGETS: 5,
+    sessions[sessionId] = {
+        mode: mode,
+        score: 0,
+        hits: 0,
+        shots: 0,
+        startTime: Date.now(),
+        targets: [],
+        maxCombo: 0,
+        currentCombo: 0,
+        lastUpdate: Date.now()
+    };
+
+    res.json({ sessionId, message: "Game started" });
+});
+
+// 2. 获取/刷新目标 (后端控制逻辑)
+app.get('/api/game/targets/:sessionId', (req, res) => {
+    const session = sessions[req.params.sessionId];
+    if (!session) return res.status(404).send("Session not found");
+
+    // Flick 模式逻辑：如果目标少于5个，随机生成
+    if (session.mode === 'flick') {
+        if (Math.random() < 0.3 && session.targets.length < 5) {
+            const newTarget = {
+                id: Math.random().toString(36).substring(7),
+                x: Math.random() * 800 + 50, // 假设画布 900x550
+                y: Math.random() * 400 + 50,
+                r: Math.random() * 10 + 20,
+                life: 1.0,
+                createdAt: Date.now()
+            };
+            session.targets.push(newTarget);
+        }
+    }
     
-    // 评分等级定义
-    getRanks: (score, acc) => {
-        if (acc > 90 && score > 2500) return { rank: "S+", color: "#ff1744" };
-        if (acc > 80 && score > 2000) return { rank: "S", color: "#ff5252" };
-        if (acc > 70 && score > 1500) return { rank: "A", color: "#ffab40" };
-        if (acc > 60 && score > 1000) return { rank: "B", color: "#4fc3f7" };
-        return { rank: "C", color: "#81c784" };
-    }
-};
+    // 清理过期目标
+    const now = Date.now();
+    session.targets = session.targets.filter(t => (now - t.createdAt) < 2000); 
 
-export class Target {
-    constructor(canvasWidth, canvasHeight, isTracking = false) {
-        this.isTracking = isTracking;
-        this.r = 0;
-        this.maxR = isTracking ? 25 : Math.random() * 10 + 20;
-        this.x = Math.random() * (canvasWidth - 150) + 75;
-        this.y = Math.random() * (canvasHeight - 150) + 75;
-        this.life = 1.0;
-        this.shrinkSpeed = isTracking ? 0 : (0.007 + Math.random() * 0.006);
-        this.vx = (Math.random() - 0.5) * 10;
-        this.vy = (Math.random() - 0.5) * 10;
-    }
+    res.json({ targets: session.targets });
+});
 
-    update(canvasWidth, canvasHeight) {
-        if (this.isTracking) {
-            if (Math.random() < 0.15) {
-                this.vx += (Math.random() - 0.5) * 4;
-                this.vy += (Math.random() - 0.5) * 4;
-            }
-            const maxSpeed = 12;
-            const speed = Math.hypot(this.vx, this.vy);
-            if (speed > maxSpeed) { 
-                this.vx = (this.vx / speed) * maxSpeed; 
-                this.vy = (this.vy / speed) * maxSpeed; 
-            }
-            const margin = 100;
-            if (this.x < margin) this.vx += 0.8;
-            if (this.x > canvasWidth - margin) this.vx -= 0.8;
-            if (this.y < margin) this.vy += 0.8;
-            if (this.y > canvasHeight - margin) this.vy -= 0.8;
-            this.x += this.vx; 
-            this.y += this.vy;
-            if (this.r < this.maxR) this.r += 2;
-        } else {
-            if (this.r < this.maxR) this.r += 2;
-            this.life -= this.shrinkSpeed;
+// 3. 点击判定 (核心逻辑移交后端)
+app.post('/api/game/click', (req, res) => {
+    const { sessionId, x, y } = req.body;
+    const session = sessions[sessionId];
+    if (!session) return res.status(404).send("Session not found");
+
+    session.shots++;
+    let hitTarget = null;
+    let gainedScore = 0;
+
+    // 判定是否命中
+    for (let i = session.targets.length - 1; i >= 0; i--) {
+        const t = session.targets[i];
+        const dist = Math.sqrt(Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2));
+        
+        if (dist < t.r) {
+            hitTarget = t;
+            session.hits++;
+            session.currentCombo++;
+            if (session.currentCombo > session.maxCombo) session.maxCombo = session.currentCombo;
+
+            // 后端计算分数，防止前端注入
+            const lifeLeft = 1 - (Date.now() - t.createdAt) / 2000;
+            const reactionBonus = Math.round(lifeLeft * 100);
+            const comboBonus = Math.floor(session.currentCombo / 5) * 10;
+            gainedScore = 50 + reactionBonus + comboBonus;
+            
+            session.score += gainedScore;
+            session.targets.splice(i, 1);
+            break;
         }
     }
 
-    draw(ctx) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        ctx.fillStyle = this.isTracking ? `rgba(79, 195, 247, 0.85)` : `rgba(255, 138, 128, ${this.life})`;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.8)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-    }
-}
+    if (!hitTarget) session.currentCombo = 0;
 
-/**
- * 计算点击得分逻辑
- */
-export function calculateHitScore(target, combo) {
-    const reactionBonus = Math.round(target.life * 100);
-    const comboBonus = Math.floor(combo / 5) * 10;
-    return 50 + reactionBonus + comboBonus;
-}
+    res.json({
+        hit: !!hitTarget,
+        gainedScore,
+        currentScore: session.score,
+        combo: session.currentCombo
+    });
+});
+
+// 4. 结算与反作弊
+app.post('/api/game/end', (req, res) => {
+    const { sessionId } = req.body;
+    const session = sessions[sessionId];
+    const duration = (Date.now() - session.startTime) / 1000;
+
+    // 反作弊：如果时间极短但分数极高，判定异常
+    if (duration < 29) {
+        return res.json({ error: "Security Check Failed: Unusual timing" });
+    }
+
+    const accuracy = (session.hits / session.shots * 100).toFixed(2);
+    res.json({
+        score: session.score,
+        accuracy: accuracy,
+        hits: session.hits,
+        maxCombo: session.maxCombo
+    });
+    
+    delete sessions[sessionId]; // 销毁会话
+});
+
+app.listen(3000, () => console.log('Game Server running on port 3000'));
