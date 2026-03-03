@@ -1,147 +1,122 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aim Trainer Pro - Private Edition</title>
-    <style>
-        :root { --p: #81c784; --a: #4fc3f7; --d: #37474f; --g: rgba(255, 255, 255, 0.95); --bg: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%); --cc: #00ff00; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; cursor: none; }
-        .f { filter: brightness(1.6) !important; }
-        .w { width: 95vw; max-width: 1000px; background: var(--g); backdrop-filter: blur(25px); border-radius: 30px; padding: 25px; box-shadow: 0 40px 100px rgba(0,0,0,0.1); position: relative; }
-        .db { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-        .sc { background: rgba(255,255,255,0.6); padding: 12px; border-radius: 15px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
-        .sl { font-size: 0.7rem; color: #90a4ae; }
-        .sv { font-size: 1.5rem; font-weight: 800; color: var(--d); }
-        .tc { grid-column: span 3; height: 6px; background: #eceff1; border-radius: 10px; overflow: hidden; }
-        #tb { height: 100%; width: 100%; background: linear-gradient(90deg, var(--p), var(--a)); transition: width 0.1s linear; }
-        .ca { position: relative; background: #1a1a1a; border-radius: 20px; overflow: hidden; border: 2px solid #333; }
-        #gc { display: block; width: 100%; height: 550px; }
-        #wc { position: absolute; bottom: -50px; right: 2%; width: 550px; height: 350px; pointer-events: none; z-index: 50; transition: transform 0.15s; display: none; }
-        #ch { position: absolute; width: 24px; height: 24px; pointer-events: none; z-index: 200; display: none; }
-        .cl { position: absolute; background: var(--cc); }
-        .cv { width: 2px; height: 20px; left: 11px; top: 2px; }
-        .ch { width: 20px; height: 2px; top: 11px; left: 2px; }
-        .ov { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(26, 26, 26, 0.95); z-index: 100; backdrop-filter: blur(10px); }
-        .bt { background: #333; color: white; border: none; padding: 16px 30px; border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; width: 280px; margin-bottom: 10px; }
-    </style>
-</head>
-<body>
-<div id="ch"><div class="cl cv"></div><div class="cl ch"></div></div>
-<div class="w">
-    <div class="db">
-        <div class="sc"><div class="sl">SCORE</div><div id="s" class="sv">0</div></div>
-        <div class="sc"><div class="sl">ACCURACY</div><div id="a" class="sv">100%</div></div>
-        <div class="sc"><div class="sl">HITS</div><div id="h" class="sv">0</div></div>
-        <div class="tc"><div id="tb"></div></div>
-    </div>
-    <div class="ca">
-        <canvas id="gc"></canvas>
-        <div id="wc">
-            <svg viewBox="0 0 300 150"><path d="M58,108 L160,95 L165,135 L58,122 Z" fill="#8B0000"/></svg>
-        </div>
-        <div id="um" class="ov">
-            <h1 id="mt" style="color:#eee">LOADING...</h1>
-            <p id="ms" style="color:#90a4ae"></p>
-            <div id="bg" style="display:none">
-                <button class="bt" onclick="_0x5a1('flick')">🎯 Flick Mode</button>
-                <button class="bt" onclick="_0x5a1('track')">🔫 Track Mode</button>
-            </div>
-        </div>
-        <div id="ue" class="ov" style="display:none">
-            <h2 id="rr" style="font-size:2.8rem"></h2>
-            <p id="rd" style="color:#78909c"></p>
-            <button class="bt" onclick="location.reload()">RESTART</button>
-        </div>
-    </div>
-</div>
-
 <script>
-    // 逻辑混淆：核心变量重命名与 Base64 逻辑注入
-    const _0x4f2d = ["/api/game-config", "innerText", "getElementById", "display", "none", "flex", "block", "json"];
-    let _cfg = { gameDuration: 30, flickSpawnRate: 0.045, maxTargets: 5, titles: { main: "TRAINER", sub: "OFFLINE" } };
-    let _gA = false, _m = 'flick', _s = 0, _h = 0, _sh = 0, _tl = 30, _ts = [], _rS = 0, _mx = 0, _my = 0;
-    const _c = document[_0x4f2d[2]]('gc'), _ctx = _c.getContext('2d'), _wc = document[_0x4f2d[2]]('wc'), _ch = document[_0x4f2d[2]]('ch');
+    /* 核心指令加密：将关键属性名放入模糊数组，防止直接关键词搜索 */
+    const _0xI = ["getElementById", "game-canvas", "timer-bar", "weapon-container", "crosshair", "ui-menu", "ui-end", "display", "none", "flex", "block", "mousedown", "mousemove", "accuracy", "score", "hits", "result-rank", "result-detail"];
+    
+    // 逻辑变量粉碎重命名
+    let _gA = !1, _m = 'flick', _s = 0, _h = 0, _sh = 0, _tl = 30, _ts = [], _rS = 0, _co = 0, _mc = 0, _mx = 0, _my = 0;
+    const _REQ = 30000;
 
-    // 初始化混淆：动态获取配置
-    (async function _0x1a2() {
-        try {
-            const _0x3e = await fetch(_0x4f2d[0]);
-            _cfg = await _0x3e[_0x4f2d[7]]();
-            document[_0x4f2d[2]]('mt')[_0x4f2d[1]] = _cfg.titles.main;
-            document[_0x4f2d[2]]('ms')[_0x4f2d[1]] = _cfg.titles.sub;
-        } catch(e) {
-            document[_0x4f2d[2]]('mt')[_0x4f2d[1]] = "OFFLINE";
-        }
-        document[_0x4f2d[2]]('bg').style[_0x4f2d[3]] = _0x4f2d[5];
-    })();
+    const _cv = document[_0xI[0]](_0xI[1]), _ctx = _cv.getContext('2d');
+    const _tb = document[_0xI[0]](_0xI[2]), _wc = document[_0xI[0]](_0xI[3]), _ch = document[_0xI[0]](_0xI[4]);
 
-    function _0x5a1(m) {
-        _m = m; _s = 0; _h = 0; _sh = 0; _tl = _cfg.gameDuration; _gA = true; _rS = performance.now();
-        document[_0x4f2d[2]]('um').style[_0x4f2d[3]] = _0x4f2d[4];
-        _ch.style[_0x4f2d[3]] = _0x4f2d[6]; _wc.style[_0x4f2d[3]] = _0x4f2d[6];
-        if(_m==='track') _ts.push(new _0xT(true));
-        requestAnimationFrame(_0xL);
-    }
+    function resize() { _cv.width = _cv.offsetWidth; _cv.height = _cv.offsetHeight; }
+    window.addEventListener('resize', resize); resize();
 
     class _0xT {
-        constructor(k){
-            this.k = k; this.r = 0; this.mR = k ? 25 : Math.random()*10+20;
-            this.x = Math.random()*(_c.width-150)+75; this.y = Math.random()*(_c.height-150)+75;
-            this.l = 1.0; this.vx = (Math.random()-0.5)*10; this.vy = (Math.random()-0.5)*10;
+        constructor(isT = !1) {
+            this.isT = isT; this.r = 0; this.mR = isT ? 25 : Math.random() * 10 + 20;
+            this.x = Math.random() * (_cv.width - 150) + 75; this.y = Math.random() * (_cv.height - 150) + 75;
+            this.l = 1.0; this.sP = isT ? 0 : (0.007 + Math.random() * 0.006);
+            this.vx = (Math.random() - 0.5) * 10; this.vy = (Math.random() - 0.5) * 10;
         }
         u() {
-            if(this.r < this.mR) this.r += 2;
-            if(this.k) { this.x+=this.vx; this.y+=this.vy; if(this.x<50||this.x>_c.width-50)this.vx*=-1; }
-            else { this.l -= 0.01; }
+            if (this.isT) {
+                if (Math.random() < 0.15) { this.vx += (Math.random() - 0.5) * 4; this.vy += (Math.random() - 0.5) * 4; }
+                const s = Math.hypot(this.vx, this.vy); if (s > 12) { this.vx = (this.vx / s) * 12; this.vy = (this.vy / s) * 12; }
+                if (this.x < 100) this.vx += 0.8; if (this.x > _cv.width - 100) this.vx -= 0.8;
+                if (this.y < 100) this.vy += 0.8; if (this.y > _cv.height - 100) this.vy -= 0.8;
+                this.x += this.vx; this.y += this.vy; this.r < this.mR && (this.r += 2);
+            } else { this.r < this.mR && (this.r += 2); this.l -= this.sP; }
         }
         d() {
-            _ctx.beginPath(); _ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
-            _ctx.fillStyle = this.k ? '#4fc3f7aa' : `rgba(255,138,128,${this.l})`;
-            _ctx.fill(); _ctx.stroke();
+            _ctx.beginPath(); _ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            _ctx.fillStyle = this.isT ? `rgba(79, 195, 247, 0.85)` : `rgba(255, 138, 128, ${this.l})`;
+            _ctx.fill(); _ctx.strokeStyle = "rgba(255,255,255,0.8)"; _ctx.lineWidth = 1.5; _ctx.stroke();
         }
     }
 
-    function _0xL() {
-        if(!_gA) return;
-        _ctx.clearRect(0,0,_c.width,_c.height);
-        _tl -= 1/60;
-        document[_0x4f2d[2]]('tb').style.width = (_tl/_cfg.gameDuration)*100+'%';
-        if(_m==='flick' && Math.random()<_cfg.flickSpawnRate && _ts.length<_cfg.maxTargets) _ts.push(new _0xT(false));
-        if(_m==='track') { _sh++; const t=_ts[0]; if(t && Math.hypot(t.x-_mx, t.y-_my)<t.r){ _h++; _s+=5; }}
+    function start(modeType) {
+        _m = modeType; _s = 0; _h = 0; _sh = 0; _tl = 30; _ts = []; _gA = !0; _rS = performance.now();
+        document[_0xI[0]](_0xI[5])[_0xI[3]][_0xI[7]] = _0xI[8];
+        document[_0xI[0]](_0xI[6])[_0xI[3]][_0xI[7]] = _0xI[8];
+        _ch[_0xI[3]][_0xI[7]] = _0xI[10];
+        if (_m === 'track') _ts.push(new _0xT(!0));
+        requestAnimationFrame(_0xLOOP);
+    }
+
+    function _0xLOOP() {
+        if (!_gA) return;
+        _ctx.clearRect(0, 0, _cv.width, _cv.height);
+        _ctx.strokeStyle = '#222'; _ctx.lineWidth = 1;
+        for (let i = 0; i < _cv.width; i += 50) { _ctx.beginPath(); _ctx.moveTo(i, 0); _ctx.lineTo(i, _cv.height); _ctx.stroke(); }
+        for (let i = 0; i < _cv.height; i += 50) { _ctx.beginPath(); _ctx.moveTo(0, i); _ctx.lineTo(_cv.width, i); _ctx.stroke(); }
+        _tl -= 1 / 60; _tb[_0xI[3]].width = (_tl / 30) * 100 + '%';
+        if (_tl <= 0) return _0xEND();
+        if (_m === 'flick') { if (Math.random() < 0.045 && _ts.length < 5) _ts.push(new _0xT(!1)); } 
+        else { _sh++; const t = _ts[0]; if (t && Math.hypot(t.x - _mx, t.y - _my) < t.r) { _h++; _s += 5; } }
         _ts = _ts.filter(t => t.l > 0); _ts.forEach(t => { t.u(); t.d(); });
-        document[_0x4f2d[2]]('s')[_0x4f2d[1]] = Math.floor(_s);
-        document[_0x4f2d[2]]('h')[_0x4f2d[1]] = _h;
-        document[_0x4f2d[2]]('a')[_0x4f2d[1]] = (_sh===0?100:Math.round(_h/_sh*100))+'%';
-        if(_tl <= 0) _0xE(); else requestAnimationFrame(_0xL);
+        _0xSTATS(); requestAnimationFrame(_0xLOOP);
     }
 
-    function _0xE() {
-        _gA = false; _ch.style[_0x4f2d[3]] = _0x4f2d[4];
-        const _d = performance.now() - _rS;
-        if(_d < (_cfg.gameDuration*1000 - 500)) {
-            document[_0x4f2d[2]]('rr')[_0x4f2d[1]] = "ERROR";
-        } else {
-            document[_0x4f2d[2]]('rr')[_0x4f2d[1]] = "FINISH";
-            document[_0x4f2d[2]]('rd')[_0x4f2d[1]] = "Score: " + Math.floor(_s);
-        }
-        document[_0x4f2d[2]]('ue').style[_0x4f2d[3]] = _0x4f2d[5];
-    }
-
-    window.addEventListener('mousemove', e => {
-        const r = _c.getBoundingClientRect(); _mx = e.clientX - r.left; _my = e.clientY - r.top;
-        if(_gA) { _ch.style.left = e.clientX-12+'px'; _ch.style.top = e.clientY-12+'px'; _wc.style.transform = `translate(${(e.clientX-window.innerWidth/2)*0.05}px, 0)`; }
-    });
-
-    _c.addEventListener('mousedown', () => {
-        if(!_gA || _m==='track') return;
-        _sh++; _wc.classList.add('f'); setTimeout(()=>_wc.classList.remove('f'), 50);
-        for(let i=_ts.length-1; i>=0; i--) {
-            const t=_ts[i]; if(Math.hypot(t.x-_mx, t.y-_my)<t.r){ _h++; _s+=50; _ts.splice(i,1); return; }
+    window.addEventListener(_0xI[12], (e) => {
+        const r = _cv.getBoundingClientRect(); _mx = e.clientX - r.left; _my = e.clientY - r.top;
+        if (_gA) {
+            _ch[_0xI[3]].left = e.clientX - 12 + 'px'; _ch[_0xI[3]].top = e.clientY - 12 + 'px';
+            const sX = (e.clientX - window.innerWidth / 2) * 0.06, sY = (e.clientY - window.innerHeight / 2) * 0.02;
+            _wc[_0xI[3]].transform = `translate(${sX}px, ${sY}px) rotate(${sX * 0.05}deg)`;
         }
     });
 
-    _c.width = _c.offsetWidth; _c.height = _c.offsetHeight;
+    _cv.addEventListener(_0xI[11], (e) => {
+        if (!_gA) return;
+        _wc.classList.add('weapon-fire'); setTimeout(() => _wc.classList.remove('weapon-fire'), 60);
+        _wc[_0xI[3]].transition = 'none'; _wc[_0xI[3]].transform += ' translate(-8px, -40px) scale(1.04) rotate(-1.5deg)';
+        setTimeout(() => {
+            _wc[_0xI[3]].transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+            const sX = (e.clientX - window.innerWidth / 2) * 0.06, sY = (e.clientY - window.innerHeight / 2) * 0.02;
+            _wc[_0xI[3]].transform = `translate(${sX}px, ${sY}px) rotate(${sX * 0.05}deg)`;
+        }, 50);
+        if (_m === 'track') return;
+        _sh++; const r = _cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        for (let i = _ts.length - 1; i >= 0; i--) {
+            const t = _ts[i];
+            if (Math.hypot(t.x - x, t.y - y) < t.r) {
+                _h++; _co++; if (_co > _mc) _mc = _co;
+                const gS = 50 + Math.round(t.l * 100) + Math.floor(_co / 5) * 10;
+                _s += gS; _ts.splice(i, 1); showEffect(x, y, `+${gS} (x${_co})`); return;
+            }
+        }
+        _co = 0;
+    });
+
+    function _0xSTATS() {
+        document[_0xI[0]](_0xI[14]).innerText = Math.floor(_s);
+        document[_0xI[0]](_0xI[15]).innerText = _h;
+        document[_0xI[0]](_0xI[13]).innerText = (_sh === 0 ? 100 : Math.round((_h / _sh) * 100)) + '%';
+    }
+
+    function _0xEND() {
+        _gA = !1; const aE = performance.now() - _rS;
+        document[_0xI[0]](_0xI[6])[_0xI[3]][_0xI[7]] = _0xI[9]; _ch[_0xI[3]][_0xI[7]] = _0xI[8];
+        if (aE < (_0xI - 100)) {
+            document[_0xI[0]](_0xI[16]).innerText = "❌ 异常检测";
+            document[_0xI[0]](_0xI[17]).innerHTML = `物理检测未通过！成绩已作废。`; return;
+        }
+        const acc = _sh === 0 ? 0 : Math.round((_h / _sh) * 100);
+        let rk = "D", cl = "#90a4ae";
+        if (acc > 90 && _s > 2500) { rk = "S+"; cl = "#ff1744"; }
+        else if (acc > 80 && _s > 2000) { rk = "S"; cl = "#ff5252"; }
+        else if (acc > 70 && _s > 1500) { rk = "A"; cl = "#ffab40"; }
+        else if (acc > 60 && _s > 1000) { rk = "B"; cl = "#4fc3f7"; }
+        document[_0xI[0]](_0xI[16]).innerText = `RANK: ${rk}`;
+        document[_0xI[0]](_0xI[16])[_0xI[3]].color = cl;
+        document[_0xI[0]](_0xI[17]).innerHTML = `<div style="text-align:left; display:inline-block; font-family:monospace;">总分: ${Math.floor(_s)}<br>准确率: ${acc}%<br>命中数: ${_h}<br>最高连击: ${_mc}<br>物理校验: 正常</div>`;
+    }
+
+    function showEffect(x, y, t) {
+        const el = document.createElement('div'); el.className = 'combo-text'; el.innerText = t;
+        el.style.left = x + 'px'; el.style.top = y + 'px';
+        document.querySelector('.canvas-area').appendChild(el);
+        setTimeout(() => el.remove(), 500);
+    }
 </script>
-</body>
-</html>
