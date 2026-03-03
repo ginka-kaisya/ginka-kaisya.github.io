@@ -1,90 +1,362 @@
-<script type="module">
-    import { GameConfig, Target, calculateHitScore } from './api/game-config.js';
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打靶訓練 Pro - CS:GO 視角版 (API版)</title>
+    <style>
+        /* 這裡完整保留您原始的所有 CSS 樣式 */
+        :root {
+            --primary: #81c784;
+            --accent: #4fc3f7;
+            --dark: #37474f;
+            --glass: rgba(255, 255, 255, 0.95);
+            --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
+            --crosshair-color: #00ff00; 
+        }
 
+        body {
+            margin: 0;
+            font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+            background: var(--bg-gradient);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            cursor: none; 
+        }
+
+        .weapon-fire {
+            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.7)) brightness(1.6) !important;
+        }
+
+        .game-wrapper {
+            width: 95vw;
+            max-width: 1000px;
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.7);
+            position: relative;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            cursor: default;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.6);
+            padding: 12px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .stat-label { font-size: 0.7rem; color: #90a4ae; text-transform: uppercase; }
+        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--dark); }
+
+        .timer-container {
+            grid-column: span 3;
+            height: 6px;
+            background: #eceff1;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #timer-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.1s linear;
+        }
+
+        .canvas-area {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid #333;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 550px;
+        }
+
+        #weapon-container {
+            position: absolute;
+            bottom: -50px; 
+            right: 2%; 
+            width: 550px;
+            height: 350px;
+            pointer-events: none;
+            z-index: 50;
+            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 30px 50px rgba(0,0,0,0.6));
+        }
+
+        #crosshair {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 200;
+            display: none;
+        }
+        .ch-line {
+            position: absolute;
+            background-color: var(--crosshair-color);
+            border-radius: 1px;
+        }
+        .ch-v { width: 2px; height: 20px; left: 11px; top: 2px; }
+        .ch-h { width: 20px; height: 2px; top: 11px; left: 2px; }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(26, 26, 26, 0.95);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            cursor: default;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 280px;
+        }
+
+        .btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #444;
+        }
+
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); background: #444; border-color: var(--primary); }
+        .btn-secondary { background: #263238; border-color: #37474f; }
+        .btn-outline { background: transparent; color: #90a4ae; border: 1px solid #444; justify-content: center; }
+
+        .combo-text {
+            position: absolute;
+            pointer-events: none;
+            color: var(--primary);
+            font-weight: bold;
+            z-index: 10;
+            animation: floatUp 0.5s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            from { opacity: 1; transform: translate(-50%, 0) scale(1.3); }
+            to { opacity: 0; transform: translate(-50%, -40px) scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="crosshair">
+    <div class="ch-line ch-v"></div>
+    <div class="ch-line ch-h"></div>
+</div>
+
+<div class="game-wrapper">
+    <div class="dashboard">
+        <div class="stat-card">
+            <div class="stat-label" id="score-label">SCORE</div>
+            <div id="score" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">ACCURACY</div>
+            <div id="accuracy" class="stat-value">100%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label" id="hits-label">HITS</div>
+            <div id="hits" class="stat-value">0</div>
+        </div>
+        <div class="timer-container">
+            <div id="timer-bar"></div>
+        </div>
+    </div>
+
+    <div class="canvas-area">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="weapon-container">
+            <svg viewBox="0 0 300 150" width="100%" height="100%">
+                <defs>
+                    <linearGradient id="crimsonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#8B0000;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#4A0000;stop-opacity:1" />
+                    </linearGradient>
+                    <pattern id="gripPattern" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+                        <path d="M0 0 L3 3 M3 0 L0 3" stroke="#1a1a1a" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <g filter="drop-shadow(3px 5px 4px rgba(0,0,0,0.6))">
+                    <circle cx="50" cy="115" r="9" fill="#111" stroke="#000" stroke-width="1"/>
+                    <rect x="42" y="113" width="16" height="4" rx="1" fill="#000"/>
+                    <circle cx="50" cy="115" r="3" fill="#000" />
+                    <path d="M58,108 L160,95 L165,135 L58,122 Z" fill="url(#crimsonGradient)" stroke="#3a0000" stroke-width="0.5"/>
+                    <path d="M60,109 L158,97 L158,99 L60,111 Z" fill="#b52b2b" opacity="0.4"/>
+                    <path d="M80,110 L140,103 L142,125 L80,128 Z" fill="url(#gripPattern)" opacity="0.7"/>
+                    <rect x="95" y="112" width="12" height="4" rx="1" fill="#000" />
+                    <rect x="120" y="110" width="15" height="4" rx="1" fill="#000" />
+                    <path d="M100,75 L155,83 L155,94 L95,85 Z" fill="#1a1a1a" stroke="#000" />
+                    <ellipse cx="100" cy="81" rx="6" ry="11" fill="#111" transform="rotate(-7, 100, 81)" stroke="#000"/>
+                    <circle cx="125" cy="85" r="2.5" fill="#00ff00" opacity="0.9">
+                        <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <path d="M160,95 L260,110 L280,160 L165,135 Z" fill="#8B0000" stroke="#4A0000"/>
+                    <path d="M162,97 L258,112 L258,115 L162,100 Z" fill="#b52b2b" opacity="0.5"/>
+                    <rect x="190" y="112" width="30" height="10" transform="rotate(8, 190, 112)" fill="#050505" rx="1.5" />
+                    <path d="M230,105 L260,110 L255,120 L235,115 Z" fill="#111" />
+                </g>
+            </svg>
+        </div>
+
+        <div id="ui-menu" class="overlay">
+            <h1 style="color:#eee; margin-bottom: 5px; letter-spacing: 2px;">AIM TRAINER PRO</h1>
+            <p style="color:#90a4ae; margin-bottom: 35px;">CS:GO 視角 | API 聯動版</p>
+            <div class="menu-buttons">
+                <button class="btn" onclick="start('flick')">🎯 打靶訓練 <span>Flick</span></button>
+                <button class="btn btn-secondary" onclick="start('track')">🔫 跟槍訓練 <span>Track</span></button>
+                <button class="btn btn-outline" onclick="location.reload()">退出遊戲</button>
+            </div>
+        </div>
+
+        <div id="ui-end" class="overlay" style="display: none;">
+            <h2 id="result-rank" style="font-size: 2.8rem; margin-bottom: 5px;"></h2>
+            <p id="result-detail" style="color: #78909c; line-height: 1.6; margin-bottom: 30px; text-align: center;"></p>
+            <button class="btn" style="width: 200px; justify-content: center;" onclick="location.reload()">返回主菜單</button>
+        </div>
+    </div>
+</div>
+
+<script>
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
     const timerBar = document.getElementById('timer-bar');
     const weaponContainer = document.getElementById('weapon-container');
     const crosshair = document.getElementById('crosshair');
     
+    // API 設定
+    const API_BASE = "http://localhost:3000/api/game"; 
+    let sessionId = null;
     let gameActive = false;
-    let mode = 'flick'; 
-    let score = 0, hits = 0, shots = 0, timeLeft = GameConfig.DURATION;
     let targets = [];
-    let realStartTime = 0; 
-    let combo = 0;
-    let maxCombo = 0;
-    let mouseX = 0, mouseY = 0;
+    let timeLeft = 30;
+    const GAME_DURATION = 30;
 
-    // 将函数绑定到 window 以便 HTML 中的 onclick 能访问（或者改用 addEventListener）
-    window.start = (selectedMode) => {
-        mode = selectedMode;
-        score = 0; hits = 0; shots = 0; timeLeft = GameConfig.DURATION;
-        targets = [];
-        gameActive = true;
-        realStartTime = performance.now();
-        document.getElementById('ui-menu').style.display = 'none';
-        document.getElementById('ui-end').style.display = 'none';
-        crosshair.style.display = 'block';
-        if(mode === 'track') targets.push(new Target(canvas.width, canvas.height, true));
-        requestAnimationFrame(gameLoop);
-    };
+    function resize() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
+    // 1. 開始遊戲：對接後端 Start API
+    async function start(mode) {
+        try {
+            const res = await fetch(`${API_BASE}/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
+            const data = await res.json();
+            sessionId = data.sessionId;
+
+            gameActive = true;
+            timeLeft = GAME_DURATION;
+            document.getElementById('ui-menu').style.display = 'none';
+            crosshair.style.display = 'block';
+
+            requestAnimationFrame(gameLoop);
+            syncTargets(); // 啟動目標同步
+        } catch (e) {
+            alert("後端 API 未啟動或無法連線！");
+        }
+    }
+
+    // 2. 目標同步：從後端獲取隨機生成的目標座標
+    async function syncTargets() {
+        if (!gameActive) return;
+        try {
+            const res = await fetch(`${API_BASE}/targets/${sessionId}`);
+            const data = await res.json();
+            targets = data.targets; // 接收後端生成的 targets
+            setTimeout(syncTargets, 100); 
+        } catch (e) {}
+    }
+
+    // 3. 渲染循環：保留原始背景網格和繪製邏輯
     function gameLoop() {
         if (!gameActive) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 绘制背景网格
+        // 繪製背景網格
         ctx.strokeStyle = '#222';
-        for(let i=0; i<canvas.width; i+=GameConfig.GRID_SIZE) { 
-            ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); 
-        }
-        for(let i=0; i<canvas.height; i+=GameConfig.GRID_SIZE) { 
-            ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); 
-        }
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+        for(let i=0; i<canvas.height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
 
+        // 倒計時（以 60fps 模擬遞減，最終分數由後端校驗）
         timeLeft -= 1/60;
-        timerBar.style.width = (timeLeft / GameConfig.DURATION) * 100 + '%';
+        timerBar.style.width = (timeLeft / GAME_DURATION) * 100 + '%';
         if (timeLeft <= 0) return endGame();
 
-        if (mode === 'flick') {
-            if (Math.random() < GameConfig.FLICK_SPAWN_CHANCE && targets.length < GameConfig.MAX_TARGETS) {
-                targets.push(new Target(canvas.width, canvas.height, false));
-            }
-        } else {
-            shots++;
-            const t = targets[0];
-            if (t && Math.hypot(t.x - mouseX, t.y - mouseY) < t.r) { hits++; score += 5; }
-        }
-
-        targets = targets.filter(t => t.life > 0);
-        targets.forEach(t => { 
-            t.update(canvas.width, canvas.height); 
-            t.draw(ctx); 
+        // 繪製目標
+        targets.forEach(t => {
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 138, 128, ${t.life || 0.8})`;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,255,255,0.8)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
         });
-        updateStats();
+
         requestAnimationFrame(gameLoop);
     }
 
-    // 鼠标交互
+    // 4. 滑鼠移動：保留原始持槍搖擺 (Sway)
     window.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        mouseX = e.clientX - rect.left;
-        mouseY = e.clientY - rect.top;
-
         if (gameActive) {
             crosshair.style.left = e.clientX - 12 + 'px';
             crosshair.style.top = e.clientY - 12 + 'px';
-            const swayX = (e.clientX - window.innerWidth / 2) * GameConfig.SWAY_INTENSITY_X;
-            const swayY = (e.clientY - window.innerHeight / 2) * GameConfig.SWAY_INTENSITY_Y;
+
+            const swayX = (e.clientX - window.innerWidth / 2) * 0.06;
+            const swayY = (e.clientY - window.innerHeight / 2) * 0.02;
             weaponContainer.style.transform = `translate(${swayX}px, ${swayY}px) rotate(${swayX * 0.05}deg)`;
         }
     });
 
-    canvas.addEventListener('mousedown', (e) => {
+    // 5. 點擊判定：對接後端 Click API，保留原始後坐力動畫
+    canvas.addEventListener('mousedown', async (e) => {
         if (!gameActive) return;
-        
-        // 开火视觉
+
+        // 視覺反饋：發光與後坐力
         weaponContainer.classList.add('weapon-fire');
         setTimeout(() => weaponContainer.classList.remove('weapon-fire'), 60);
 
@@ -92,62 +364,60 @@
         weaponContainer.style.transform += ' translate(-8px, -40px) scale(1.04) rotate(-1.5deg)';
         
         setTimeout(() => {
-            weaponContainer.style.transition = `transform ${GameConfig.RECOIL_DURATION}ms cubic-bezier(0.18, 0.89, 0.32, 1.28)`;
-            const shiftX = (e.clientX - window.innerWidth / 2) * GameConfig.SWAY_INTENSITY_X;
-            const shiftY = (e.clientY - window.innerHeight / 2) * GameConfig.SWAY_INTENSITY_Y;
-            weaponContainer.style.transform = `translate(${shiftX}px, ${shiftY}px) rotate(${shiftX * 0.05}deg)`;
+            weaponContainer.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+            const swayX = (e.clientX - window.innerWidth / 2) * 0.06;
+            const swayY = (e.clientY - window.innerHeight / 2) * 0.02;
+            weaponContainer.style.transform = `translate(${swayX}px, ${swayY}px) rotate(${swayX * 0.05}deg)`;
         }, 50);
 
-        if (mode === 'track') return;
-        shots++;
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        for(let i = targets.length - 1; i >= 0; i--) {
-            const t = targets[i];
-            if (Math.hypot(t.x - x, t.y - y) < t.r) {
-                hits++;
-                combo++;
-                if (combo > maxCombo) maxCombo = combo;
-                const gained = calculateHitScore(t, combo);
-                score += gained;
-                targets.splice(i, 1);
-                showEffect(x, y, `+${gained} (x${combo})`);
-                return;
+        // 調用 API
+        try {
+            const res = await fetch(`${API_BASE}/click`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, x, y })
+            });
+            const result = await res.json();
+
+            if (result.hit) {
+                showEffect(x, y, `+${result.gainedScore} (x${result.combo})`);
+                document.getElementById('score').innerText = result.currentScore;
+                document.getElementById('hits').innerText = result.hits || parseInt(document.getElementById('hits').innerText)+1;
             }
-        }
-        combo = 0;
+        } catch (e) {}
     });
 
-    function updateStats() {
-        document.getElementById('score').innerText = Math.floor(score);
-        document.getElementById('hits').innerText = hits;
-        const acc = shots === 0 ? 100 : Math.round((hits / shots) * 100);
-        document.getElementById('accuracy').innerText = acc + '%';
-    }
-
-    function endGame() {
+    // 6. 結算：對接後端 End API
+    async function endGame() {
         gameActive = false;
-        const actualElapsed = performance.now() - realStartTime;
-        const uiEnd = document.getElementById('ui-end');
-        uiEnd.style.display = 'flex';
         crosshair.style.display = 'none';
-
-        if (actualElapsed < (GameConfig.REQUIRED_TIME_MS - 100)) {
-            document.getElementById('result-rank').innerText = "❌ 异常检测";
-            return;
-        }
-
-        const acc = shots === 0 ? 0 : Math.round((hits / shots) * 100);
-        const { rank, color } = GameConfig.getRanks(score, acc);
         
-        const rankEl = document.getElementById('result-rank');
-        rankEl.innerText = `RANK: ${rank}`;
-        rankEl.style.color = color;
-        document.getElementById('result-detail').innerHTML = `
-            总分: ${Math.floor(score)} | 准确率: ${acc}% | 最高连击: ${maxCombo}
-        `;
+        try {
+            const res = await fetch(`${API_BASE}/end`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId })
+            });
+            const data = await res.json();
+
+            document.getElementById('ui-end').style.display = 'flex';
+            const rankEl = document.getElementById('result-rank');
+            rankEl.innerText = data.rank ? `RANK: ${data.rank}` : "GAME OVER";
+            
+            document.getElementById('result-detail').innerHTML = `
+                總分: ${data.score}<br>
+                準確率: ${data.accuracy}%<br>
+                命中數: ${data.hits}<br>
+                最高連擊: ${data.maxCombo}<br>
+                ${data.error ? `<span style="color:red">${data.error}</span>` : '校驗通過'}
+            `;
+        } catch (e) {
+            alert("結算失敗，後端未響應");
+        }
     }
 
     function showEffect(x, y, text) {
@@ -160,3 +430,5 @@
         setTimeout(() => el.remove(), 500);
     }
 </script>
+</body>
+</html>
