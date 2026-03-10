@@ -10,6 +10,7 @@
             --accent: #ff8a80;
             --sky: #4fc3f7;
             --csgo-orange: #f29000;
+            --fighter-blue: #4fc3f7; /* 雷霆战机主题色 */
             --glass: rgba(255, 255, 255, 0.88);
             --bg-gradient: linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%);
         }
@@ -97,6 +98,13 @@
             box-shadow: 0 15px 30px rgba(0,0,0,0.05);
         }
 
+        /* 雷霆战机专属悬停效果 */
+        .fighter-card:hover {
+            border-color: var(--fighter-blue);
+            box-shadow: 0 15px 30px rgba(79, 195, 247, 0.2);
+        }
+
+        /* CS2 特别悬停效果 */
         .csgo-card:hover {
             border-color: var(--csgo-orange);
         }
@@ -111,11 +119,11 @@
             justify-content: center;
             font-size: 2rem;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
-        /* --- CS2 特别样式（适配 PNG） --- */
         .cs2-logo-bg {
-            background: #000; /* PNG 往往带透明度，黑色背景更帅 */
+            background: #000;
             border: 1px solid #ddd;
         }
 
@@ -126,10 +134,9 @@
             transition: transform 0.3s ease;
         }
 
-        .csgo-card:hover .game-icon img {
+        .game-card:hover .game-icon img {
             transform: scale(1.15);
         }
-        /* --------------------------- */
 
         .game-info .title { font-weight: bold; color: #37474f; font-size: 1.1rem; }
         .game-info .tag { 
@@ -210,6 +217,14 @@
                         <div class="tag">FPS 炼枪</div>
                     </div>
                 </a>
+
+                <a href="thunder-fighter.html" class="game-card fighter-card">
+                    <div class="game-icon" style="background:#1a237e">🚀</div>
+                    <div class="game-info">
+                        <div class="title">雷霆战机</div>
+                        <div class="tag" style="background:#e3f2fd; color:#1565c0;">STG 射击</div>
+                    </div>
+                </a>
                 
                 <a href="https://www.counter-strike.net/cs2" target="_blank" class="game-card csgo-card">
                     <div class="game-icon cs2-logo-bg">
@@ -218,14 +233,6 @@
                     <div class="game-info">
                         <div class="title">CSGO 2</div>
                         <div class="tag" style="background:#fff3e0; color:#e65100;">官方网站</div>
-                    </div>
-                </a>
-
-                <a href="#" class="game-card" style="opacity:0.6; cursor:not-allowed;">
-                    <div class="game-icon">🔒</div>
-                    <div class="game-info">
-                        <div class="title">敬请期待</div>
-                        <div class="tag">即将解锁</div>
                     </div>
                 </a>
             </div>
@@ -243,7 +250,7 @@
                     <div class="dot done"></div> 访问像素广工 (1/1)
                 </div>
                 <div class="quest-item">
-                    <div class="dot"></div> Rush B 成功 (0/1)
+                    <div class="dot"></div> 击落 5 架精英机 (0/5)
                 </div>
                 <div class="quest-item">
                     <div class="dot"></div> 接住 50 片樱花 (0/50)
@@ -252,7 +259,7 @@
 
             <div class="announcement">
                 <strong>广播站：</strong>
-                宿舍网络优化完毕，祝各位在 CS2 战场旗开得胜！
+                《雷霆战机》现已上线！鼠标控制，火力全开，你能拿到 1000 分吗？
             </div>
         </div>
     </div>
