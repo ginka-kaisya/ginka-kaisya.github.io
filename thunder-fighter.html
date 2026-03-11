@@ -269,9 +269,33 @@ function draw() {
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(player.x+20, player.y+25, 3, 0, Math.PI*2); ctx.fill();
     }
     // Boss
-    if (boss) {
-        ctx.fillStyle = boss.phase === 2 ? '#ff1744' : '#d32f2f'; ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
-        ctx.fillStyle = '#000'; ctx.fillRect(boss.x+20, boss.y+20, 20, 10); ctx.fillRect(boss.x+boss.w-40, boss.y+20, 20, 10);
+if (boss) {
+        ctx.save();
+        // 核心机体
+        ctx.fillStyle = boss.phase === 2 ? '#ff1744' : '#d32f2f';
+        ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+        
+        // 装甲阴影
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(boss.x, boss.y + boss.h - 10, boss.w, 10);
+        
+        // 侧翼装饰
+        ctx.fillStyle = '#9a0007';
+        ctx.fillRect(boss.x - 10, boss.y + 20, 10, 40);
+        ctx.fillRect(boss.x + boss.w, boss.y + 20, 10, 40);
+
+        // 能量核心 (随帧率律动)
+        let pulse = Math.sin(frames * 0.1) * 5;
+        ctx.fillStyle = boss.phase === 2 ? '#fff' : '#4fc3f7';
+        ctx.beginPath();
+        ctx.arc(boss.x + boss.w / 2, boss.y + boss.h / 2, 15 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 眼睛/观察口
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(boss.x + 25, boss.y + 15, 25, 8);
+        ctx.fillRect(boss.x + boss.w - 50, boss.y + 15, 25, 8);
+        ctx.restore();
     }
     // 道具
     items.forEach(it => {
@@ -280,9 +304,107 @@ function draw() {
         ctx.fillStyle = '#000'; ctx.font = 'bold 14px Arial'; ctx.fillText(it.type[0].toUpperCase(), it.x+8, it.y+18);
     });
     // 子弹与敌人
-    bullets.forEach(b => { ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, 4, 15); });
-    enemyBullets.forEach(eb => { ctx.fillStyle = '#ff5252'; ctx.beginPath(); ctx.arc(eb.x, eb.y, 5, 0, Math.PI*2); ctx.fill(); });
-    enemies.forEach(en => { ctx.fillStyle = en.color; ctx.fillRect(en.x, en.y, en.w, en.h); });
+// --- 升级版 玩家子弹绘制 ---
+    bullets.forEach(b => {
+        ctx.save();
+        // 添加发光滤镜
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = b.color || '#fff';
+        
+        if (player.weaponType === 'spread') {
+            // 散弹：炽热能量球
+            let grad = ctx.createRadialGradient(b.x + 3, b.y + 3, 1, b.x + 3, b.y + 3, 6);
+            grad.addColorStop(0, '#fff');
+            grad.addColorStop(0.4, '#ff9800');
+            grad.addColorStop(1, '#f44336');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(b.x + 3, b.y + 3, 6, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // 普通/强化子弹：梭形等离子束
+            ctx.fillStyle = b.color || '#fff';
+            // 绘制一个带尖头的梭形
+            ctx.beginPath();
+            ctx.moveTo(b.x, b.y + 15);
+            ctx.lineTo(b.x + 4, b.y);
+            ctx.lineTo(b.x + 8, b.y + 15);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制核心亮线
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(b.x + 4, b.y + 2);
+            ctx.lineTo(b.x + 4, b.y + 12);
+            ctx.stroke();
+        }
+        ctx.restore();
+    });
+
+    // --- 升级版 敌机子弹绘制 ---
+    enemyBullets.forEach(eb => {
+        ctx.save();
+        // 外部红色光圈
+        ctx.fillStyle = '#ff5252';
+        ctx.beginPath();
+        ctx.arc(eb.x, eb.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 内部白色亮芯 (让弹幕更醒目，减少莫名掉血感)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(eb.x, eb.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 添加一个微弱的拖尾
+        ctx.strokeStyle = 'rgba(255, 82, 82, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(eb.x, eb.y);
+        ctx.lineTo(eb.x - (eb.vx || 0) * 2, eb.y - (eb.vy || 5) * 2);
+        ctx.stroke();
+        ctx.restore();
+    });
+    enemies.forEach(en => {
+        ctx.save();
+        ctx.fillStyle = en.color;
+        
+        if (en.type === 'normal') {
+            // T型战机
+            ctx.fillRect(en.x + 10, en.y, 10, 30); // 机身
+            ctx.fillRect(en.x, en.y + 5, 30, 8);   // 机翼
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(en.x + 12, en.y + 5, 6, 4); // 驾驶舱
+        } 
+        else if (en.type === 'kami') {
+            // 菱形拦截机
+            ctx.translate(en.x + 12, en.y + 12);
+            ctx.rotate(frames * 0.05);
+            ctx.fillRect(-12, -12, 24, 24);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-4, -4, 8, 8); // 核心
+        } 
+        else if (en.type === 'bomber') {
+            // 重型轰炸机
+            ctx.fillRect(en.x, en.y, en.w, 25); // 主体
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(en.x + 5, en.y + 5, en.w - 10, 15);
+            // 两个大炮口
+            ctx.fillStyle = '#cfd8dc';
+            ctx.fillRect(en.x + 10, en.y + 25, 12, 10);
+            ctx.fillRect(en.x + en.w - 22, en.y + 25, 12, 10);
+            // 红色警示灯
+            if (frames % 20 < 10) {
+                ctx.fillStyle = '#f44336';
+                ctx.beginPath(); ctx.arc(en.x + en.w/2, en.y + 12, 4, 0, Math.PI*2); ctx.fill();
+            }
+        } else {
+            ctx.fillRect(en.x, en.y, en.w, en.h);
+        }
+        ctx.restore();
+    });
 
     ctx.restore();
     requestAnimationFrame(() => { update(); draw(); });
