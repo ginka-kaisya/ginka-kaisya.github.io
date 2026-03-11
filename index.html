@@ -88,8 +88,8 @@
         /* 四宫格导航网格 */
         .nav-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 严格两列 */
-            grid-template-rows: repeat(2, 1fr);    /* 严格两行 */
+            grid-template-columns: repeat(2, 1fr); 
+            grid-template-rows: auto;    /* 修改为auto以容纳新增行 */
             gap: 16px;
             margin-top: 35px;
         }
@@ -121,6 +121,8 @@
         .entertainment-link { background: var(--sky-blue); }
         .contact-link { background: var(--accent); }
         .campus-link { background: linear-gradient(135deg, #81c784 0%, #4caf50 100%); }
+        /* 新增：商品购买颜色 */
+        .shop-link { background: linear-gradient(135deg, #ffb74d 0%, #f57c00 100%); }
 
         /* 流光扫过动画效果 */
         .nav-card::after {
@@ -181,6 +183,11 @@
             <a href="university.html" class="nav-card campus-link">
                 <strong>🏫 漫步校园</strong>
                 <span>1:1 还原的现代广工</span>
+            </a>
+
+            <a href="shop.html" class="nav-card shop-link">
+                <strong>🛒 商品购买</strong>
+                <span>限定周边与校园纪念</span>
             </a>
         </div>
     </div>
