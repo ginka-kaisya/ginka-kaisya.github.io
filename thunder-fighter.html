@@ -5,156 +5,744 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>雷霆战机：终极完整版 - 像素广工</title>
     <style>
-        :root { --p: #4fc3f7; --d: #ff5252; --h: #81c784; --w: #ffca28; }
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'PingFang SC', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: #fff; user-select: none; }
+        :root {
+            --primary: #4fc3f7; --danger: #ff5252; --health: #81c784; --power: #ffca28;
+        }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'PingFang SC', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; user-select: none; }
         canvas { background: radial-gradient(circle at center, #001529 0%, #000 100%); box-shadow: 0 0 50px rgba(79, 195, 247, 0.5); cursor: none; }
+        
         #ui-layer { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; width: calc(100% - 40px); }
         .progress-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 10px; }
-        #progress-bar { width: 0%; height: 100%; background: var(--p); box-shadow: 0 0 10px var(--p); transition: 0.1s; }
+        #progress-bar { width: 0%; height: 100%; background: var(--primary); box-shadow: 0 0 10px var(--primary); transition: 0.1s; }
         .hp-container { width: 150px; height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; margin-top: 10px; overflow: hidden; }
-        #hp-bar { width: 100%; height: 100%; background: var(--h); transition: 0.3s; }
-        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; background: rgba(0,0,0,0.9); padding: 40px; border-radius: 30px; border: 2px solid var(--p); z-index: 100; pointer-events: auto; }
-        .btn-retry { margin-top: 20px; padding: 12px 40px; background: var(--p); border: none; border-radius: 25px; font-weight: bold; cursor: pointer; color: #000; }
+        #hp-bar { width: 100%; height: 100%; background: var(--health); transition: 0.3s; }
+        
+        #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; background: rgba(0,0,0,0.9); padding: 40px; border-radius: 30px; border: 2px solid var(--primary); z-index: 100; pointer-events: auto; }
+        .btn-retry { margin-top: 20px; padding: 12px 40px; background: var(--primary); border: none; border-radius: 25px; font-weight: bold; cursor: pointer; color: #000; }
+        
         #bomb-ui { position: absolute; bottom: 20px; right: 20px; text-align: right; pointer-events: none; }
-        .bomb-icon { display: inline-block; width: 25px; height: 25px; background: var(--d); border-radius: 50%; border: 2px solid #fff; margin-left: 5px; box-shadow: 0 0 10px var(--d); }
-        #notice { position: absolute; width: 100%; text-align: center; font-size: 32px; font-weight: 900; color: var(--w); top: 30%; opacity: 0; pointer-events: none; transition: 0.5s; text-shadow: 0 0 10px #000; }
+        .bomb-icon { display: inline-block; width: 25px; height: 25px; background: var(--danger); border-radius: 50%; border: 2px solid #fff; margin-left: 5px; box-shadow: 0 0 10px var(--danger); }
+        
+        #notice { position: absolute; width: 100%; text-align: center; font-size: 32px; font-weight: 900; color: var(--power); top: 30%; opacity: 0; pointer-events: none; transition: 0.5s; text-shadow: 0 0 10px #000; }
     </style>
 </head>
 <body>
+
+        <div id="start-screen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+    <h1 style="color: var(--primary); font-size: 48px; margin-bottom: 10px; text-shadow: 0 0 20px var(--primary);">雷霆战机</h1>
+    <p style="color: #fff; font-size: 16px; margin-bottom: 30px; opacity: 0.8;">像素广工 · 终极完整版</p>
+    
+    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 30px; font-size: 14px; line-height: 1.6;">
+        <p>🖱️ 鼠标/触摸：控制机体移动</p>
+        <p>👆 双击：释放超必杀轰炸</p>
+        <p>🎁 道具：P(火力) H(回血) S(散弹) L(激光)</p>
+    </div>
+
+    <button class="btn-retry" onclick="startGame()" style="font-size: 20px; padding: 15px 60px;">出 击</button>
+</div>
+        
     <div id="ui-layer">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 20px; font-weight: 800; color: var(--p);">MISSION <span id="level-num">1</span></div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--primary);">MISSION <span id="level-num">1</span></div>
             <div style="font-size: 18px; color: #fff;">SCORE: <span id="scoreVal">0</span></div>
         </div>
         <div class="progress-container"><div id="progress-bar"></div></div>
         <div class="hp-container"><div id="hp-bar"></div></div>
         <div id="boss-ui" style="display:none; margin-top:10px;">
-            <div id="boss-hp-bar" style="width:100%; height:12px; background:var(--d); border:1px solid #fff;"></div>
+            <div id="boss-hp-bar" style="width:100%; height:12px; background:var(--danger); border:1px solid #fff;"></div>
         </div>
     </div>
+
     <div id="bomb-ui">BOMBS: <span id="bomb-list"></span></div>
     <div id="notice">MISSION START</div>
+
     <div id="overlay">
-        <h2 style="color:var(--d); font-size: 40px; margin: 0;">机体坠毁</h2>
+        <h2 style="color:var(--danger); font-size: 40px; margin: 0;">机体坠毁</h2>
         <p id="finalScore" style="margin: 15px 0; font-size: 20px;"></p>
-        <button class="btn-retry" onclick="_r()">重新出击</button>
-    </div>
+        <button class="btn-retry" onclick="resetGame()">重新出击</button>    </div>
+
     <canvas id="gameCanvas"></canvas>
+
 <script>
-const _c = document.getElementById('gameCanvas'), _ctx = _c.getContext('2d'), _hpB = document.getElementById('hp-bar'), _sE = document.getElementById('scoreVal'), _lE = document.getElementById('level-num'), _pB = document.getElementById('progress-bar'), _bU = document.getElementById('boss-ui'), _bhB = document.getElementById('boss-hp-bar'), _nE = document.getElementById('notice');
-function _rs() { _c.width = Math.min(window.innerWidth, 0x1c2); _c.height = Math.min(window.innerHeight, 0x2ee); }
-_rs();
-let _s = 0, _gO = !1, _f = 0, _l = 1, _pg = 0, _iBM = !1, _sF = 0, _fA = 0, _bC = 3, _bl = [], _en = [], _it = [], _eb = [], _bs = null;
-const _p = { x: 200, y: 600, tX: 200, tY: 600, w: 40, h: 40, hp: 100, inv: 0, pwr: 1, wT: 'bullet' };
-_c.addEventListener('mousemove', e => { const r = _c.getBoundingClientRect(); _p.tX = (e.clientX - r.left) - _p.w / 2; _p.tY = (e.clientY - r.top) - _p.h / 2; });
-_c.addEventListener('touchmove', e => { e.preventDefault(); const r = _c.getBoundingClientRect(), t = e.touches[0]; _p.tX = (t.clientX - r.left) - _p.w / 2; _p.tY = (t.clientY - r.top) - _p.h / 2; }, { passive: !1 });
-let _lC = 0; _c.addEventListener('mousedown', () => { let n = Date.now(); if (n - _lC < 300) _uB(); _lC = n; });
-function _uB() { if (_bC <= 0 || _gO) return; _bC--; _upBU(); _sF = 25; _fA = 0.8; _eb = []; _en.forEach(e => e.hp -= 30); if (_bs) _bs.hp -= 100; _shN("MEGA BOMB!"); }
-function _upBU() { document.getElementById('bomb-list').innerHTML = '<div class="bomb-icon"></div>'.repeat(_bC); }
-function _shN(t) { _nE.innerText = t; _nE.style.opacity = 1; setTimeout(() => _nE.style.opacity = 0, 1500); }
-function _dI(x, y) { const ts = ['power', 'heal', 'spread', 'lightning'], t = ts[Math.floor(Math.random() * ts.length)]; _it.push({ x, y, w: 25, h: 25, type: t }); }
-function _sEn() { if (_iBM || _pg >= 100) return; _pg += 1.5; _pB.style.width = _pg + '%'; if (_pg >= 100) { _sBM(); return; } const r = Math.random(); let e = { x: Math.random()*(_c.width-40), y: -50, w:30, h:30, hp: _l, type:'normal', color:'#ff5252', speed: 3 + _l*0.2 }; if (_pg > 30 && r < 0.2) e = { ...e, w:24, h:24, hp: 2, type:'kami', color:'#ffca28', speed: 5 }; else if (_pg > 60 && r < 0.12) e = { ...e, w:60, h:40, hp: 20*_l, type:'bomber', color:'#546e7a', speed: 1.5, vx: 2 }; _en.push(e); }
-function _sBM() { _iBM = !0; _bU.style.display = 'block'; _shN("BOSS ALERT"); _bs = { x: _c.width/2 - 60, y: -120, w: 120, h: 80, hp: 200*_l, maxHp: 200*_l, vx: 2, st: 'entering', ph: 1 }; }
-function _u() {
-    if (_gO) return; _f++; _p.x += (_p.tX - _p.x) * 0.2; _p.y += (_p.tY - _p.y) * 0.2;
-    if (_p.x < 0) _p.x = 0; if (_p.x > _c.width - _p.w) _p.x = _c.width - _p.w;
-    if (_p.y < 0) _p.y = 0; if (_p.y > _c.height - _p.h) _p.y = _c.height - _p.h;
-    if (_p.inv > 0) _p.inv--; if (_fA > 0) _fA -= 0.05; if (_sF > 0) _sF--;
-    if (_f % 45 === 0) _sEn();
-    let fR = _p.wT === 'lightning' ? 5 : 8;
-    if (_f % fR === 0) {
-        const lv = _p.pwr;
-        if (_p.wT === 'spread') {
-            let c = lv === 1 ? 3 : (lv === 2 ? 5 : 7);
-            for(let i = 0; i < c; i++) _bl.push({ x: _p.x + 20, y: _p.y, vx: (i - (c-1)/2) * 2.5, vy: -10, color: '#f44336' });
-        } else if (_p.wT === 'lightning') {
-            for(let i = 0; i < lv; i++) _bl.push({ x: _p.x + (i * 15) + (20 - lv * 7.5), y: _p.y, vx: 0, vy: -20, color: '#ea80fc' });
-        } else {
-            _bl.push({ x: _p.x + 5, y: _p.y, vx: 0, vy: -15, color: '#fff' });
-            _bl.push({ x: _p.x + 35, y: _p.y, vx: 0, vy: -15, color: '#fff' });
-            if (lv >= 2) { _bl.push({ x: _p.x - 5, y: _p.y + 10, vx: -0.5, vy: -15, color: '#4fc3f7' }); _bl.push({ x: _p.x + 45, y: _p.y + 10, vx: 0.5, vy: -15, color: '#4fc3f7' }); }
-            if (lv >= 3) { _bl.push({ x: _p.x + 20, y: _p.y - 10, vx: -1.5, vy: -14, color: '#fff' }); _bl.push({ x: _p.x + 20, y: _p.y - 10, vx: 1.5, vy: -14, color: '#fff' }); }
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const hpBar = document.getElementById('hp-bar');
+const scoreEl = document.getElementById('scoreVal');
+const levelEl = document.getElementById('level-num');
+const progressBar = document.getElementById('progress-bar');
+const bossUI = document.getElementById('boss-ui');
+const bossHpBar = document.getElementById('boss-hp-bar');
+const noticeEl = document.getElementById('notice');
+
+function resize() {
+    canvas.width = Math.min(window.innerWidth, 450);
+    canvas.height = Math.min(window.innerHeight, 750);
+}
+resize();
+
+// 游戏状态
+// 修改：增加 gameStarted 状态，初始为 false
+let score = 0, gameOver = false, gameStarted = false, frames = 0, level = 1, progress = 0;
+let isBossMode = false, shakeFrames = 0, flashAlpha = 0, bombCount = 3;
+
+const player = { 
+    x: 200, 
+    y: 600, 
+    targetX: 200, 
+    targetY: 600, 
+    w: 40, 
+    h: 40, 
+    hp: 100, 
+    invincible: 0, 
+    power: 1,         // 这里的 power 对应 weaponLevel
+    weaponType: 'bullet' // 初始武器
+};
+let bullets = [], enemies = [], items = [], enemyBullets = [], boss = null;
+
+// 交互更新：支持全屏坐标追踪
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    // 减去宽高的一半，使飞机中心跟随鼠标
+    player.targetX = (e.clientX - rect.left) - player.w / 2;
+    player.targetY = (e.clientY - rect.top) - player.h / 2;
+});
+
+// 如果是移动端，添加触摸支持
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    player.targetX = (touch.clientX - rect.left) - player.w / 2;
+    player.targetY = (touch.clientY - rect.top) - player.h / 2;
+}, { passive: false });
+
+let lastClick = 0;
+canvas.addEventListener('mousedown', () => {
+    let now = Date.now();
+    if (now - lastClick < 300) useBomb();
+    lastClick = now;
+});
+
+function useBomb() {
+    if (bombCount <= 0 || gameOver) return;
+    bombCount--;
+    updateBombUI();
+    shakeFrames = 25;
+    flashAlpha = 0.8;
+    enemyBullets = [];
+    enemies.forEach(en => en.hp -= 30);
+    if (boss) boss.hp -= 100;
+    showNotice("MEGA BOMB!");
+}
+
+function updateBombUI() {
+    document.getElementById('bomb-list').innerHTML = '<div class="bomb-icon"></div>'.repeat(bombCount);
+}
+
+function showNotice(txt) {
+    noticeEl.innerText = txt;
+    noticeEl.style.opacity = 1;
+    setTimeout(() => noticeEl.style.opacity = 0, 1500);
+}
+
+//道具
+function dropItem(x, y) {
+    // 增加了 'lightning' (L) 道具
+    const types = ['power', 'heal', 'spread', 'lightning']; 
+    const t = types[Math.floor(Math.random() * types.length)];
+    items.push({ x, y, w: 25, h: 25, type: t });
+}
+
+function spawnEnemy() {
+    if (isBossMode || progress >= 100) return;
+    progress += 1.5;
+    progressBar.style.width = progress + '%';
+    if (progress >= 100) { startBossMode(); return; }
+
+    const r = Math.random();
+    let en = { x: Math.random()*(canvas.width-40), y: -50, w:30, h:30, hp: level, type:'normal', color:'#ff5252', speed: 3 + level*0.2 };
+
+    if (progress > 50 && r < 0.15) {
+        en = { 
+            ...en, 
+            w:26, 
+            h:26, 
+            hp: 3, 
+            type:'sniper', 
+            color:'#b388ff', 
+            speed: 1.2,
+            cooldown: 120
+        };
+    }
+    else if (progress > 30 && r < 0.2) {
+        en = { ...en, w:24, h:24, hp: 2, type:'kami', color:'#ffca28', speed: 5 };
+    }
+    else if (progress > 60 && r < 0.12) {
+        en = { ...en, w:60, h:40, hp: 20*level, type:'bomber', color:'#546e7a', speed: 1.5, vx: 2 };
+    }
+
+    enemies.push(en);
+}
+
+function startBossMode() {
+    isBossMode = true;
+    bossUI.style.display = 'block';
+    showNotice("BOSS ALERT");
+    boss = { x: canvas.width/2 - 60, y: -120, w: 120, h: 80, hp: 200*level, maxHp: 200*level, vx: 2, state: 'entering', phase: 1 };
+}
+
+function startGame() {
+    gameStarted = true;
+    document.getElementById('start-screen').style.display = 'none';
+    showNotice("READY... GO!");
+}
+
+function update() {
+    if (!gameStarted || gameOver) return; // 修改：如果没开始，直接跳过逻辑更新
+    frames++;
+    // ... 原有代码保持不变
+    
+    // 平滑移动逻辑 (缓动系数 0.2 让手感更丝滑)
+    player.x += (player.targetX - player.x) * 0.2;
+    player.y += (player.targetY - player.y) * 0.2;
+
+    // 全屏边界判定
+    if (player.x < 0) player.x = 0;
+    if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
+    if (player.y < 0) player.y = 0;
+    if (player.y > canvas.height - player.h) player.y = canvas.height - player.h;
+
+    if (player.invincible > 0) player.invincible--;
+    if (flashAlpha > 0) flashAlpha -= 0.05;
+    if (shakeFrames > 0) shakeFrames--;
+
+    if (frames % 45 === 0) spawnEnemy();
+    
+// 射击逻辑
+let fireRate = player.weaponType === 'lightning' ? 5 : 8;
+    if (frames % fireRate === 0) {
+        const lv = player.power; // 当前等级 1-3
+
+        if (player.weaponType === 'spread') {
+            // --- 散弹 S 升级逻辑 ---
+            // 1级: 3路 | 2级: 5路 | 3级: 7路全屏覆盖
+            let count = lv === 1 ? 3 : (lv === 2 ? 5 : 7);
+            for(let i = 0; i < count; i++) {
+                bullets.push({ 
+                    x: player.x + 20, y: player.y, 
+                    vx: (i - (count-1)/2) * 2.5, vy: -10, 
+                    color: '#f44336', isSpread: true 
+                });
+            }
+        } 
+        else if (player.weaponType === 'lightning') {
+            // --- 电弧 L 升级逻辑 ---
+            // 1级: 1束 | 2级: 2束平行 | 3级: 3束带小幅自动追踪
+            for(let i = 0; i < lv; i++) {
+                bullets.push({ 
+                    x: player.x + (i * 15) + (20 - lv * 7.5), 
+                    y: player.y, vx: 0, vy: -20, 
+                    color: '#ea80fc', isLightning: true 
+                });
+            }
+        } 
+        else {
+            // --- 普通弹 Bullet 升级逻辑 ---
+            // 1级: 双射 | 2级: 四射 | 3级: 六射(带侧翼)
+            bullets.push({ x: player.x + 5, y: player.y, vx: 0, vy: -15, color: '#fff' });
+            bullets.push({ x: player.x + 35, y: player.y, vx: 0, vy: -15, color: '#fff' });
+            if (lv >= 2) {
+                bullets.push({ x: player.x - 5, y: player.y + 10, vx: -0.5, vy: -15, color: '#4fc3f7' });
+                bullets.push({ x: player.x + 45, y: player.y + 10, vx: 0.5, vy: -15, color: '#4fc3f7' });
+            }
+            if (lv >= 3) {
+                bullets.push({ x: player.x + 20, y: player.y - 10, vx: -1.5, vy: -14, color: '#fff' });
+                bullets.push({ x: player.x + 20, y: player.y - 10, vx: 1.5, vy: -14, color: '#fff' });
+            }
         }
     }
-    _bl.forEach((b, i) => {
-        b.y += b.vy; b.x += b.vx; if (b.y < -50) _bl.splice(i, 1);
-        if (_iBM && _bs && _bs.st === 'fight') {
-            if (b.x > _bs.x && b.x < _bs.x+_bs.w && b.y < _bs.y+_bs.h) {
-                _bs.hp -= (_p.wT === 'spread' ? 0.8 : 1); _bl.splice(i, 1);
-                _bhB.style.width = (_bs.hp/_bs.maxHp*100) + '%';
-                if (_bs.hp < _bs.maxHp * 0.5) _bs.ph = 2; if (_bs.hp <= 0) _wL();
+
+    // 子弹更新
+    bullets.forEach((b, i) => {
+        b.y += b.vy; b.x += b.vx;
+        if (b.y < -50) bullets.splice(i, 1);
+        if (isBossMode && boss && boss.state === 'fight') {
+            if (b.x > boss.x && b.x < boss.x+boss.w && b.y < boss.y+boss.h) {
+                boss.hp -= (player.weaponType === 'spread' ? 0.8 : 1);
+                bullets.splice(i, 1);
+                bossHpBar.style.width = (boss.hp/boss.maxHp*100) + '%';
+                if (boss.hp < boss.maxHp * 0.5) boss.phase = 2;
+                if (boss.hp <= 0) winLevel();
             }
         }
     });
-    _en.forEach((e, i) => {
-        e.y += e.speed; if (e.type === 'kami') e.x += (_p.x - e.x) * 0.04;
-        if (e.type === 'bomber') { e.x += e.vx; if (e.x < 0 || e.x > _c.width-e.w) e.vx *= -1; if (_f % 80 === 0) _eb.push({x: e.x+e.w/2, y: e.y+e.h, vx:0, vy:5}); }
-        if (e.y > 0 && _p.inv <= 0) { if (Math.abs((_p.x+20)-(e.x+e.w/2)) < 20 && Math.abs((_p.y+20)-(e.y+e.h/2)) < 20) { _tD(30); _en.splice(i, 1); } }
-        _bl.forEach((b, bi) => { if (e.y > 0 && b.x > e.x && b.x < e.x+e.w && b.y > e.y && b.y < e.y+e.h) { e.hp--; _bl.splice(bi, 1); if (e.hp <= 0) { _s += 100; _sE.innerText = _s; if (Math.random() < 0.25) _dI(e.x, e.y); _en.splice(i, 1); } } });
-        if (e.y > _c.height) _en.splice(i, 1);
-    });
-    _it.forEach((it, i) => {
-        it.y += 2; if (Math.abs(it.x - (_p.x + 20)) < 35 && Math.abs(it.y - (_p.y + 20)) < 35) {
-            if (it.type === 'power') { _p.pwr = Math.min(3, _p.pwr + 1); _shN("POWER UP! LV" + _p.pwr); }
-            else if (it.type === 'heal') { _p.hp = Math.min(100, _p.hp + 30); _hpB.style.width = _p.hp + '%'; }
-            else { _p.wT = it.type; _shN((it.type === 'spread' ? "SPREAD SHOT" : "PLASMA ARC") + " LV" + _p.pwr); }
-            _it.splice(i, 1);
+
+    // 敌人更新
+    enemies.forEach((en, i) => {
+        en.y += en.speed;
+        if (en.type === 'kami') en.x += (player.x - en.x) * 0.04;
+if (en.type === 'sniper') {
+    en.y += 0.5;
+
+    if (frames % en.cooldown === 0) {
+        let dx = (player.x + 20) - (en.x + en.w/2);
+        let dy = (player.y + 20) - (en.y + en.h/2);
+        let len = Math.sqrt(dx*dx + dy*dy);
+
+        enemyBullets.push({
+            x: en.x + en.w/2,
+            y: en.y + en.h/2,
+            vx: dx/len * 8,
+            vy: dy/len * 8
+        });
+    }
+}
+
+        if (en.type === 'bomber') {
+            en.x += en.vx; if (en.x < 0 || en.x > canvas.width-en.w) en.vx *= -1;
+            if (frames % 80 === 0) enemyBullets.push({x: en.x+en.w/2, y: en.y+en.h, vx:0, vy:5});
         }
-        if (it.y > _c.height) _it.splice(i, 1);
+        // 碰撞检测
+        if (en.y > 0 && player.invincible <= 0) {
+            if (Math.abs((player.x+20)-(en.x+en.w/2)) < 20 && Math.abs((player.y+20)-(en.y+en.h/2)) < 20) {
+                takeDamage(30); enemies.splice(i, 1);
+            }
+        }
+        bullets.forEach((b, bi) => {
+            if (en.y > 0 && b.x > en.x && b.x < en.x+en.w && b.y > en.y && b.y < en.y+en.h) {
+                en.hp--; bullets.splice(bi, 1);
+                if (en.hp <= 0) { 
+                    score += 100; scoreEl.innerText = score;
+                    if (Math.random() < 0.25) dropItem(en.x, en.y);
+                    enemies.splice(i, 1); 
+                }
+            }
+        });
+        if (en.y > canvas.height) enemies.splice(i, 1);
     });
-    if (_iBM && _bs) {
-        if (_bs.st === 'entering') { _bs.y += 1; if (_bs.y >= 80) _bs.st = 'fight'; }
-        else { _bs.x += _bs.vx * (_bs.ph === 2 ? 1.8 : 1); if (_bs.x <= 0 || _bs.x >= _c.width - _bs.w) _bs.vx *= -1; let r = _bs.ph === 2 ? 40 : 70; if (_f % r === 0) { let c = _bs.ph === 2 ? 10 : 6; for (let i = 0; i < c; i++) _eb.push({ x: _bs.x + _bs.w/2, y: _bs.y + _bs.h, vx: (i - c/2)*1.5, vy: 4 }); } }
+
+    // 道具更新
+    items.forEach((it, i) => {
+        it.y += 2;
+if (Math.abs(it.x - (player.x + 20)) < 35 && Math.abs(it.y - (player.y + 20)) < 35) {
+        if (it.type === 'power') {
+            // 捡到 P：最高升到 3 级
+            player.power = Math.min(3, player.power + 1);
+            showNotice("POWER UP! LV" + player.power);
+        } else if (it.type === 'heal') {
+            player.hp = Math.min(100, player.hp + 30);
+            hpBar.style.width = player.hp + '%';
+        } else {
+            // 捡到 S 或 L：切换武器，等级不变
+            player.weaponType = it.type;
+            const name = it.type === 'spread' ? "SPREAD SHOT" : "PLASMA ARC";
+            showNotice(name + " LV" + player.power);
+        }
+        items.splice(i, 1);
     }
-    _eb.forEach((b, i) => { b.x += b.vx; b.y += b.vy; if (_p.inv <= 0 && Math.abs(b.x - (_p.x+20)) < 10 && Math.abs(b.y - (_p.y+25)) < 10) { _tD(20); _eb.splice(i, 1); } if (b.y > _c.height) _eb.splice(i, 1); });
+        if (it.y > canvas.height) items.splice(i, 1);
+    });
+
+    // Boss 行为
+    if (isBossMode && boss) {
+        if (boss.state === 'entering') {
+            boss.y += 1; if (boss.y >= 80) boss.state = 'fight';
+        } else {
+            boss.x += boss.vx * (boss.phase === 2 ? 1.8 : 1);
+            if (boss.x <= 0 || boss.x >= canvas.width - boss.w) boss.vx *= -1;
+            let rate = boss.phase === 2 ? 40 : 70;
+            if (frames % rate === 0) {
+                let c = boss.phase === 2 ? 10 : 6;
+                for (let i = 0; i < c; i++) enemyBullets.push({ x: boss.x + boss.w/2, y: boss.y + boss.h, vx: (i - c/2)*1.5, vy: 4 });
+            }
+        }
+    }
+
+    enemyBullets.forEach((eb, i) => {
+        eb.x += eb.vx; eb.y += eb.vy;
+        if (player.invincible <= 0 && Math.abs(eb.x - (player.x+20)) < 10 && Math.abs(eb.y - (player.y+25)) < 10) {
+            takeDamage(20); enemyBullets.splice(i, 1);
+        }
+        if (eb.y > canvas.height) enemyBullets.splice(i, 1);
+    });
 }
-function _tD(v) { _p.hp -= v; _p.inv = 60; _fA = 0.5; _sF = 15; _hpB.style.width = Math.max(0, _p.hp) + '%'; if (_p.hp <= 0) _eG(); }
-function _wL() { _l++; _lE.innerText = _l; _pg = 0; _iBM = !1; _bs = null; _en = []; _eb = []; _bl = []; _it = []; _bU.style.display = 'none'; _bC = Math.min(3, _bC + 1); _upBU(); _shN("MISSION CLEAR!"); }
-function _dr() {
-    _ctx.save(); if (_sF > 0) _ctx.translate(Math.random()*8-4, Math.random()*8-4); _ctx.clearRect(0, 0, _c.width, _c.height);
-    if (_fA > 0) { _ctx.fillStyle = `rgba(255,50,50,${_fA})`; _ctx.fillRect(0,0,_c.width,_c.height); }
-    if (_p.inv % 4 < 2) {
-        _ctx.save(); _ctx.translate(_p.x + _p.w / 2, _p.y + _p.h / 2);
-        const fH = 15 + Math.random() * 10, gF = _ctx.createLinearGradient(0, 10, 0, 10 + fH);
-        gF.addColorStop(0, '#4fc3f7'); gF.addColorStop(1, 'transparent'); _ctx.fillStyle = gF;
-        _ctx.beginPath(); _ctx.moveTo(-8, 15); _ctx.lineTo(0, 15 + fH); _ctx.lineTo(8, 15); _ctx.fill();
-        _ctx.fillStyle = '#0288d1'; _ctx.beginPath(); _ctx.moveTo(-20, 5); _ctx.lineTo(-20, 15); _ctx.lineTo(0, 0); _ctx.moveTo(20, 5); _ctx.lineTo(20, 15); _ctx.lineTo(0, 0); _ctx.fill();
-        _ctx.fillStyle = '#4fc3f7'; _ctx.beginPath(); _ctx.moveTo(0, -20); _ctx.bezierCurveTo(-12, -5, -12, 15, 0, 18); _ctx.bezierCurveTo(12, 15, 12, -5, 0, -20); _ctx.fill();
-        _ctx.fillStyle = '#e1f5fe'; _ctx.beginPath(); _ctx.ellipse(0, -5, 4, 8, 0, 0, Math.PI * 2); _ctx.fill();
-        if (_p.pwr >= 2) { _ctx.fillStyle = '#b3e5fc'; _ctx.fillRect(-18, 5, 4, 10); _ctx.fillRect(14, 5, 4, 10); }
-        _ctx.fillStyle = '#fff'; _ctx.shadowBlur = 5; _ctx.shadowColor = '#fff'; _ctx.beginPath(); _ctx.arc(0, 5, 3, 0, Math.PI * 2); _ctx.fill(); _ctx.restore();
-    }
-    if (_bs) {
-        _ctx.save(); _ctx.fillStyle = _bs.ph === 2 ? '#ff1744' : '#d32f2f'; _ctx.fillRect(_bs.x, _bs.y, _bs.w, _bs.h);
-        _ctx.fillStyle = 'rgba(0,0,0,0.3)'; _ctx.fillRect(_bs.x, _bs.y + _bs.h - 10, _bs.w, 10);
-        _ctx.fillStyle = '#9a0007'; _ctx.fillRect(_bs.x - 10, _bs.y + 20, 10, 40); _ctx.fillRect(_bs.x + _bs.w, _bs.y + 20, 10, 40);
-        let p = Math.sin(_f * 0.1) * 5; _ctx.fillStyle = _bs.ph === 2 ? '#fff' : '#4fc3f7';
-        _ctx.beginPath(); _ctx.arc(_bs.x + _bs.w / 2, _bs.y + _bs.h / 2, 15 + p, 0, Math.PI * 2); _ctx.fill();
-        _ctx.fillStyle = '#1a1a1a'; _ctx.fillRect(_bs.x + 25, _bs.y + 15, 25, 8); _ctx.fillRect(_bs.x + _bs.w - 50, _bs.y + 15, 25, 8); _ctx.restore();
-    }
-    _it.forEach(it => {
-        const cs = { power: '#ffca28', heal: '#81c784', spread: '#f44336', lightning: '#ea80fc' }, iC = cs[it.type] || '#fff';
-        _ctx.save(); _ctx.strokeStyle = '#fff'; _ctx.lineWidth = 2; _ctx.strokeRect(it.x, it.y, it.w, it.h);
-        _ctx.fillStyle = iC; _ctx.fillRect(it.x, it.y, it.w, it.h); _ctx.fillStyle = '#000'; _ctx.font = 'bold 16px Arial'; _ctx.textAlign = 'center'; _ctx.textBaseline = 'middle';
-        _ctx.fillText(it.type[0].toUpperCase(), it.x + it.w/2, it.y + it.h/2 + 1); _ctx.strokeStyle = 'rgba(255,255,255,0.5)'; _ctx.beginPath(); _ctx.moveTo(it.x, it.y + it.h); _ctx.lineTo(it.x + it.w, it.y); _ctx.stroke(); _ctx.restore();
-    });
-    _bl.forEach(b => {
-        _ctx.save(); _ctx.shadowBlur = 10; _ctx.shadowColor = b.color || '#fff';
-        if (_p.wT === 'spread') { let g = _ctx.createRadialGradient(b.x + 3, b.y + 3, 1, b.x + 3, b.y + 3, 6); g.addColorStop(0, '#fff'); g.addColorStop(0.4, '#ff9800'); g.addColorStop(1, '#f44336'); _ctx.fillStyle = g; _ctx.beginPath(); _ctx.arc(b.x + 3, b.y + 3, 6, 0, Math.PI * 2); _ctx.fill(); }
-        else { _ctx.fillStyle = b.color || '#fff'; _ctx.beginPath(); _ctx.moveTo(b.x, b.y + 15); _ctx.lineTo(b.x + 4, b.y); _ctx.lineTo(b.x + 8, b.y + 15); _ctx.closePath(); _ctx.fill(); _ctx.strokeStyle = '#fff'; _ctx.lineWidth = 2; _ctx.beginPath(); _ctx.moveTo(b.x + 4, b.y + 2); _ctx.lineTo(b.x + 4, b.y + 12); _ctx.stroke(); } _ctx.restore();
-    });
-    _eb.forEach(b => { _ctx.save(); _ctx.fillStyle = '#ff5252'; _ctx.beginPath(); _ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); _ctx.fill(); _ctx.fillStyle = '#fff'; _ctx.beginPath(); _ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2); _ctx.fill(); _ctx.strokeStyle = 'rgba(255,82,82,0.3)'; _ctx.lineWidth = 2; _ctx.beginPath(); _ctx.moveTo(b.x, b.y); _ctx.lineTo(b.x - (b.vx || 0) * 2, b.y - (b.vy || 5) * 2); _ctx.stroke(); _ctx.restore(); });
-    _en.forEach(e => {
-        _ctx.save(); _ctx.fillStyle = e.color; if (e.type === 'normal') { _ctx.fillRect(e.x + 10, e.y, 10, 30); _ctx.fillRect(e.x, e.y + 5, 30, 8); _ctx.fillStyle = '#fff'; _ctx.fillRect(e.x + 12, e.y + 5, 6, 4); }
-        else if (e.type === 'kami') { _ctx.translate(e.x + 12, e.y + 12); _ctx.rotate(_f * 0.05); _ctx.fillRect(-12, -12, 24, 24); _ctx.fillStyle = '#000'; _ctx.fillRect(-4, -4, 8, 8); }
-        else if (e.type === 'bomber') { _ctx.fillRect(e.x, e.y, e.w, 25); _ctx.fillStyle = 'rgba(0,0,0,0.4)'; _ctx.fillRect(e.x + 5, e.y + 5, e.w - 10, 15); _ctx.fillStyle = '#cfd8dc'; _ctx.fillRect(e.x + 10, e.y + 25, 12, 10); _ctx.fillRect(e.x + e.w - 22, e.y + 25, 12, 10); if (_f % 20 < 10) { _ctx.fillStyle = '#f44336'; _ctx.beginPath(); _ctx.arc(e.x + e.w/2, e.y + 12, 4, 0, Math.PI*2); _ctx.fill(); } }
-        else { _ctx.fillRect(e.x, e.y, e.w, e.h); } _ctx.restore();
-    });
-    _ctx.restore(); requestAnimationFrame(() => { _u(); _dr(); });
+
+function takeDamage(v) {
+    player.hp -= v; player.invincible = 60;
+    flashAlpha = 0.5; shakeFrames = 15;
+    hpBar.style.width = Math.max(0, player.hp) + '%';
+    if (player.hp <= 0) endGame();
 }
-function _eG() { _gO = !0; document.getElementById('overlay').style.display = 'block'; document.getElementById('finalScore').innerText = `SCORE: ${_s}`; }
-function _r() { _s = 0; _gO = !1; _f = 0; _l = 1; _pg = 0; _iBM = !1; _bs = null; _bC = 3; _bl = []; _en = []; _it = []; _eb = []; _p.hp = 100; _p.x = _c.width / 2 - _p.w / 2; _p.y = _c.height - 100; _p.tX = _p.x; _p.tY = _p.y; _p.pwr = 1; _p.wT = 'bullet'; _p.inv = 60; _sE.innerText = _s; _lE.innerText = _l; _hpB.style.width = '100%'; _pB.style.width = '0%'; _bU.style.display = 'none'; document.getElementById('overlay').style.display = 'none'; _upBU(); _shN("MISSION RESTART"); }
-_upBU(); _dr();
+
+function winLevel() {
+    level++; levelEl.innerText = level;
+    progress = 0; isBossMode = false; boss = null;
+    enemies = []; enemyBullets = []; bullets = []; items = [];
+    bossUI.style.display = 'none';
+    bombCount = Math.min(3, bombCount + 1); updateBombUI();
+    showNotice("MISSION CLEAR!");
+}
+
+function draw() {
+    ctx.save();
+    if (shakeFrames > 0) ctx.translate(Math.random()*8-4, Math.random()*8-4);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (flashAlpha > 0) { ctx.fillStyle = `rgba(255,50,50,${flashAlpha})`; ctx.fillRect(0,0,canvas.width,canvas.height); }
+
+    // 玩家
+// --- 优化版：玩家模型 (进阶战机) ---
+    if (player.invincible % 4 < 2) {
+        ctx.save();
+        ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+
+        // 1. 引擎喷火效果 (动态律动)
+        const flameHeight = 15 + Math.random() * 10;
+        const gradFlame = ctx.createLinearGradient(0, 10, 0, 10 + flameHeight);
+        gradFlame.addColorStop(0, '#4fc3f7');
+        gradFlame.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradFlame;
+        ctx.beginPath();
+        ctx.moveTo(-8, 15);
+        ctx.lineTo(0, 15 + flameHeight);
+        ctx.lineTo(8, 15);
+        ctx.fill();
+
+        // 2. 绘制机翼 (深色金属感)
+        ctx.fillStyle = '#0288d1';
+        ctx.beginPath();
+        ctx.moveTo(-20, 5); ctx.lineTo(-20, 15); ctx.lineTo(0, 0); // 左翼
+        ctx.moveTo(20, 5); ctx.lineTo(20, 15); ctx.lineTo(0, 0);   // 右翼
+        ctx.fill();
+
+        // 3. 绘制主机身 (流线型)
+        ctx.fillStyle = '#4fc3f7';
+        ctx.beginPath();
+        ctx.moveTo(0, -20);    // 尖端
+        ctx.bezierCurveTo(-12, -5, -12, 15, 0, 18); // 左侧曲线
+        ctx.bezierCurveTo(12, 15, 12, -5, 0, -20);  // 右侧曲线
+        ctx.fill();
+
+        // 4. 驾驶舱 (高光玻璃)
+        ctx.fillStyle = '#e1f5fe';
+        ctx.beginPath();
+        ctx.ellipse(0, -5, 4, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. 挂载武器 (随火力等级变化)
+        if (player.power >= 2) {
+            ctx.fillStyle = '#b3e5fc';
+            ctx.fillRect(-18, 5, 4, 10); // 左侧炮口
+            ctx.fillRect(14, 5, 4, 10);  // 右侧炮口
+        }
+
+        // 6. 核心判定点提示 (微弱呼吸灯效果)
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = '#fff';
+        ctx.beginPath();
+        ctx.arc(0, 5, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // Boss
+if (boss) {
+        ctx.save();
+        // 核心机体
+        ctx.fillStyle = boss.phase === 2 ? '#ff1744' : '#d32f2f';
+        ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+        
+        // 装甲阴影
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(boss.x, boss.y + boss.h - 10, boss.w, 10);
+        
+        // 侧翼装饰
+        ctx.fillStyle = '#9a0007';
+        ctx.fillRect(boss.x - 10, boss.y + 20, 10, 40);
+        ctx.fillRect(boss.x + boss.w, boss.y + 20, 10, 40);
+
+        // 能量核心 (随帧率律动)
+        let pulse = Math.sin(frames * 0.1) * 5;
+        ctx.fillStyle = boss.phase === 2 ? '#fff' : '#4fc3f7';
+        ctx.beginPath();
+        ctx.arc(boss.x + boss.w / 2, boss.y + boss.h / 2, 15 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 眼睛/观察口
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(boss.x + 25, boss.y + 15, 25, 8);
+        ctx.fillRect(boss.x + boss.w - 50, boss.y + 15, 25, 8);
+        ctx.restore();
+    }
+    // 道具
+    items.forEach(it => {
+        // 定义颜色表，确保包含所有类型
+        const colors = { 
+            power: '#ffca28',     // 金色 P
+            heal: '#81c784',      // 绿色 H
+            spread: '#f44336',    // 红色 S
+            lightning: '#ea80fc'  // 紫色 L
+        };
+        
+        const itemColor = colors[it.type] || '#ffffff';
+
+        ctx.save();
+        // 1. 绘制发光外框
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(it.x, it.y, it.w, it.h);
+
+        // 2. 绘制填充背景
+        ctx.fillStyle = itemColor;
+        ctx.fillRect(it.x, it.y, it.w, it.h);
+
+        // 3. 绘制道具字母 (P, H, S, L)
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // 字母居中显示
+        ctx.fillText(it.type[0].toUpperCase(), it.x + it.w/2, it.y + it.h/2 + 1);
+        
+        // 4. 添加简单的流光动画 (随时间偏移)
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.moveTo(it.x, it.y + it.h);
+        ctx.lineTo(it.x + it.w, it.y);
+        ctx.stroke();
+        
+        ctx.restore();
+    });
+
+    // 子弹与敌人
+// --- 升级版 玩家子弹绘制 ---
+    bullets.forEach(b => {
+        ctx.save();
+        // 添加发光滤镜
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = b.color || '#fff';
+        
+        if (player.weaponType === 'spread') {
+            // 散弹：炽热能量球
+            let grad = ctx.createRadialGradient(b.x + 3, b.y + 3, 1, b.x + 3, b.y + 3, 6);
+            grad.addColorStop(0, '#fff');
+            grad.addColorStop(0.4, '#ff9800');
+            grad.addColorStop(1, '#f44336');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(b.x + 3, b.y + 3, 6, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // 普通/强化子弹：梭形等离子束
+            ctx.fillStyle = b.color || '#fff';
+            // 绘制一个带尖头的梭形
+            ctx.beginPath();
+            ctx.moveTo(b.x, b.y + 15);
+            ctx.lineTo(b.x + 4, b.y);
+            ctx.lineTo(b.x + 8, b.y + 15);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制核心亮线
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(b.x + 4, b.y + 2);
+            ctx.lineTo(b.x + 4, b.y + 12);
+            ctx.stroke();
+        }
+        ctx.restore();
+    });
+
+    // --- 升级版 敌机子弹绘制 ---
+    enemyBullets.forEach(eb => {
+        ctx.save();
+        // 外部红色光圈
+        ctx.fillStyle = '#ff5252';
+        ctx.beginPath();
+        ctx.arc(eb.x, eb.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 内部白色亮芯 (让弹幕更醒目，减少莫名掉血感)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(eb.x, eb.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 添加一个微弱的拖尾
+        ctx.strokeStyle = 'rgba(255, 82, 82, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(eb.x, eb.y);
+        ctx.lineTo(eb.x - (eb.vx || 0) * 2, eb.y - (eb.vy || 5) * 2);
+        ctx.stroke();
+        ctx.restore();
+    });
+
+   // --- 极精细化 敌机模型绘制 ---
+    enemies.forEach(en => {
+        ctx.save();
+        ctx.translate(en.x + en.w / 2, en.y + en.h / 2);
+
+        if (en.type === 'normal') {
+            // 【精锐截击机】
+            // 1. 底层侧翼（带金属渐变）
+            let wingGrad = ctx.createLinearGradient(-20, 0, 20, 0);
+            wingGrad.addColorStop(0, '#455a64');
+            wingGrad.addColorStop(0.5, '#90a4ae');
+            wingGrad.addColorStop(1, '#455a64');
+            ctx.fillStyle = wingGrad;
+            ctx.beginPath();
+            ctx.moveTo(-20, -5); ctx.lineTo(20, -5); ctx.lineTo(0, 18);
+            ctx.closePath(); ctx.fill();
+
+            // 2. 主机身装甲
+            ctx.fillStyle = '#263238';
+            ctx.beginPath();
+            ctx.moveTo(-6, -15); ctx.lineTo(6, -15); 
+            ctx.lineTo(8, 5); ctx.lineTo(-8, 5);
+            ctx.closePath(); ctx.fill();
+
+            // 3. 红色能量灯带（呼吸感）
+            let pulse = (Math.sin(frames * 0.2) + 1) * 0.5;
+            ctx.shadowBlur = 8 * pulse;
+            ctx.shadowColor = '#ff1744';
+            ctx.fillStyle = `rgba(255, 23, 68, ${0.5 + 0.5 * pulse})`;
+            ctx.fillRect(-4, -8, 8, 2);
+        } 
+        else if (en.type === 'kami') {
+            // 【核心过载机】
+            // 1. 外部环绕护盾碎片
+            ctx.rotate(frames * 0.15);
+            ctx.strokeStyle = 'rgba(255, 202, 40, 0.6)';
+            ctx.lineWidth = 2;
+            for(let i=0; i<4; i++) {
+                ctx.rotate(Math.PI/2);
+                ctx.beginPath(); ctx.arc(14, 0, 5, 0, Math.PI); ctx.stroke();
+            }
+            // 2. 球形聚能核心
+            let coreGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 12);
+            coreGrad.addColorStop(0, '#fff');
+            coreGrad.addColorStop(0.3, '#ffca28');
+            coreGrad.addColorStop(1, 'rgba(255, 82, 82, 0)');
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
+        } 
+
+else if (en.type === 'sniper') {
+    // 狙击无人机
+    ctx.fillStyle = '#311b92';
+    ctx.beginPath();
+    ctx.arc(0, 0, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 瞄准激光
+    ctx.strokeStyle = '#b388ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(player.x - en.x, player.y - en.y);
+    ctx.stroke();
+
+    // 中心能量点
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+        else if (en.type === 'bomber') {
+            // 【重型空中堡垒】
+            // 1. 左右巨大的涡轮引擎
+            const drawEngine = (side) => {
+                ctx.fillStyle = '#212121';
+                ctx.fillRect(side * 22 - 6, -12, 12, 24);
+                // 引擎内部红光
+                ctx.fillStyle = '#b71c1c';
+                ctx.fillRect(side * 22 - 3, 8, 6, 4);
+                // 进气口金属环
+                ctx.strokeStyle = '#78909c';
+                ctx.strokeRect(side * 22 - 6, -12, 12, 5);
+            };
+            drawEngine(1); drawEngine(-1);
+
+            // 2. 多层复合装甲机身
+            let bodyGrad = ctx.createLinearGradient(-25, 0, 25, 0);
+            bodyGrad.addColorStop(0, '#37474f');
+            bodyGrad.addColorStop(0.5, '#546e7a');
+            bodyGrad.addColorStop(1, '#37474f');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.moveTo(-25, -15); ctx.lineTo(25, -15);
+            ctx.lineTo(30, 10); ctx.lineTo(10, 20);
+            ctx.lineTo(-10, 20); ctx.lineTo(-30, 10);
+            ctx.closePath(); ctx.fill();
+
+            // 3. 观察窗点阵
+            ctx.fillStyle = '#00e5ff';
+            ctx.shadowBlur = 5; ctx.shadowColor = '#00e5ff';
+            for(let i=-1; i<=1; i++) {
+                ctx.beginPath(); ctx.arc(i*8, -5, 2, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        ctx.restore();
+    });
+
+    ctx.restore();
+    requestAnimationFrame(() => { update(); draw(); });
+}
+
+function endGame() {
+    gameOver = true;
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('finalScore').innerText = `SCORE: ${score}`;
+}
+
+function resetGame() {
+    // 1. 重置基础状态
+    score = 0;
+    gameOver = false;
+    frames = 0;
+    level = 1;
+    progress = 0;
+    isBossMode = false;
+    boss = null;
+    bombCount = 3;
+
+    // 2. 清空所有数组（子弹、敌人、道具）
+    bullets = [];
+    enemies = [];
+    items = [];
+    enemyBullets = [];
+
+    // 3. 重置玩家属性
+    player.hp = 100;
+    player.x = canvas.width / 2 - player.w / 2;
+    player.y = canvas.height - 100;
+    player.targetX = player.x;
+    player.targetY = player.y;
+    player.power = 1; // 回到 1 级火力
+    player.weaponType = 'bullet';
+    player.invincible = 60; // 开局送 1 秒无敌，防止原地暴毙
+
+    // 4. 更新 UI 显示
+    scoreEl.innerText = score;
+    levelEl.innerText = level;
+    hpBar.style.width = '100%';
+    progressBar.style.width = '0%';
+    bossUI.style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+    updateBombUI();
+    
+    showNotice("MISSION RESTART");
+
+    // 5. 重新启动循环 (如果之前停止了的话)
+    // 注意：因为 draw 函数一直在 requestAnimationFrame，所以只要 gameOver 设为 false，循环会自动恢复
+}
+
+updateBombUI();
+draw();
 </script>
 </body>
 </html>
