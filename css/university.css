@@ -19,15 +19,16 @@ body {
     align-items: center;
     overflow: hidden;
     background: linear-gradient(120deg,#ffffff,#e2e8f0,#ffffff);
-    background-size:200% 200%;
-    animation:bgmove 12s infinite alternate;
+    background-size: 200% 200%;
+    animation: bgmove 12s infinite alternate;
 }
 
-@keyframes bgmove{
-    0%{background-position:0%}
-    100%{background-position:100%}
+@keyframes bgmove {
+    0% { background-position: 0% }
+    100% { background-position: 100% }
 }
 
+/* 容器布局 */
 .main-container {
     width: 95vw;
     max-width: 1200px;
@@ -42,6 +43,7 @@ body {
     animation: appEntrance 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* 响应式适配 */
 @media (max-width: 968px) {
     .main-container { flex-direction: column; height: 95vh; }
     .canvas-wrapper { height: 40% !important; border-right: none !important; }
@@ -68,6 +70,7 @@ canvas { width: 100%; height: 100%; image-rendering: auto; }
     justify-content: space-between;
 }
 
+/* 文本与按钮样式 */
 .back-btn {
     display: inline-flex;
     align-items: center;
@@ -77,6 +80,7 @@ canvas { width: 100%; height: 100%; image-rendering: auto; }
     font-weight: 600;
     transition: 0.3s;
 }
+
 .back-btn:hover { color: var(--gdut-red); transform: translateX(-5px); }
 
 .hero-text h1 {
@@ -120,6 +124,7 @@ canvas { width: 100%; height: 100%; image-rendering: auto; }
     color: white;
     box-shadow: 0 15px 30px rgba(177, 62, 83, 0.2);
 }
+
 .primary-btn:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 40px rgba(177, 62, 83, 0.3);
@@ -132,6 +137,7 @@ canvas { width: 100%; height: 100%; image-rendering: auto; }
     border: 1px solid rgba(234, 179, 8, 0.2);
     box-shadow: 0 10px 20px rgba(234, 179, 8, 0.1);
 }
+
 .secondary-btn:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 30px rgba(234, 179, 8, 0.2);
@@ -139,13 +145,13 @@ canvas { width: 100%; height: 100%; image-rendering: auto; }
 }
 
 .info-card {
-    margin-top:20px;
-    padding:15px;
-    border-radius:12px;
-    background:rgba(255,255,255,0.6);
-    font-size:14px;
-    color:#475569;
-    line-height:1.6;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.6);
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.6;
 }
 
 @keyframes appEntrance {
