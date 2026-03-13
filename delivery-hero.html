@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>广工外卖王 - 职业送货版</title>
+    <title>广工外卖王 - 武装进化版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #a5d6a7; font-family: 'PingFang SC', sans-serif; }
         canvas { display: block; background: #81c784; cursor: crosshair; }
@@ -19,6 +19,20 @@
         }
         .waiting { background: #ffe0b2; color: #ef6c00; }
         .delivering { background: #c8e6c9; color: #2e7d32; }
+        .powerup { background: #f44336; color: white; animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.6; } }
+
+        #deathScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); display: none; 
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; color: white;
+        }
+        .restart-btn {
+            margin-top: 25px; padding: 18px 50px; font-size: 22px; font-weight: bold;
+            background: #4caf50; color: white; border: none; border-radius: 50px;
+            cursor: pointer; pointer-events: auto;
+        }
     </style>
 </head>
 <body>
@@ -28,10 +42,17 @@
         <div style="font-size: 14px; color: #666;">存活时间: <span id="gameTimer">00:00</span></div>
         <div style="font-size: 24px; font-weight: bold; color: #333;">送达订单: <span id="score">0</span></div>
         <div style="margin-top: 5px; font-size: 14px; color: #666;">
+            模式：<span id="modeName">常规配送</span><br>
             能量: <div style="width:100px; height:8px; background:#eee; display:inline-block; border-radius:4px;">
                 <div id="energyInner" style="width:100%; height:100%; background:#ff9800; border-radius:4px;"></div>
             </div>
         </div>
+    </div>
+
+    <div id="deathScreen">
+        <h1 style="font-size: 50px;">🚧 配送事故 🚧</h1>
+        <p id="finalStats" style="font-size: 20px; color: #ccc;"></p>
+        <button class="restart-btn" onclick="location.reload()">重新接单</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -42,29 +63,28 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const statusTag = document.getElementById('statusTag');
 const energyInner = document.getElementById('energyInner');
-const gameTimerEl = document.getElementById('gameTimer'); // 时间显示元素
+const gameTimerEl = document.getElementById('gameTimer');
+const deathScreen = document.getElementById('deathScreen');
+const modeName = document.getElementById('modeName');
 
 let score = 0;
 let energy = 100;
 let isGameOver = false;
 let mousePos = { x: 0, y: 0 };
-let restartBtnRect = { x: 0, y: 0, w: 200, h: 60 };
-
-// 难度控制变量
 let gameStartTime = Date.now();
-let spawnInterval = 1000; // 初始 1 秒一个敌人
-let enemySpeedMultiplier = 1; // 初始速度倍率
+let spawnInterval = 1000;
+let enemySpeedMultiplier = 1;
 let obstacleTimer = null;
 
-// 核心逻辑变量
 let hasPackage = false; 
 let currentTarget = { x: 0, y: 0, size: 40 }; 
 
-const player = {
-    x: 0, y: 0, size: 22, speed: 4.5,
-    isDashing: false, dashTimer: 0
-};
+// 新增道具和子弹系统
+let powerUp = null; // {x, y, type}
+let bullets = [];
+let attackTimer = 0; // 攻击剩余时间
 
+const player = { x: 0, y: 0, size: 22, speed: 4.5, isDashing: false, dashTimer: 0 };
 const keys = { w: false, a: false, s: false, d: false };
 let obstacles = [];
 
@@ -73,18 +93,22 @@ function init() {
     canvas.height = window.innerHeight;
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-    restartBtnRect.x = canvas.width / 2 - 100;
-    restartBtnRect.y = canvas.height / 2 + 50;
     spawnNewTask();
-    resetObstacleTimer(); // 初始化障碍物生成器
+    resetObstacleTimer();
 }
 
 function spawnNewTask() {
     const margin = 100;
     currentTarget.x = margin + Math.random() * (canvas.width - margin * 2);
     currentTarget.y = margin + Math.random() * (canvas.height - margin * 2);
-    
-    if (!hasPackage) {
+    updateTag();
+}
+
+function updateTag() {
+    if (attackTimer > 0) {
+        statusTag.innerText = "超辣无敌中! 🔥";
+        statusTag.className = "status-tag powerup";
+    } else if (!hasPackage) {
         statusTag.innerText = "前往取货点 📦";
         statusTag.className = "status-tag waiting";
     } else {
@@ -93,18 +117,32 @@ function spawnNewTask() {
     }
 }
 
+// 随机生成道具 (低概率)
+function trySpawnPowerUp() {
+    if (!powerUp && Math.random() < 0.002) { // 每一帧 0.2% 概率
+        powerUp = {
+            x: 100 + Math.random() * (canvas.width - 200),
+            y: 100 + Math.random() * (canvas.height - 200),
+            size: 25
+        };
+    }
+}
+
+function fireBullet() {
+    const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+    bullets.push({
+        x: player.x,
+        y: player.y,
+        vx: Math.cos(angle) * 10,
+        vy: Math.sin(angle) * 10
+    });
+}
+
 window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
 window.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
 window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
-
 window.addEventListener('mousedown', () => {
-    if (isGameOver) {
-        if (mousePos.x > restartBtnRect.x && mousePos.x < restartBtnRect.x + restartBtnRect.w &&
-            mousePos.y > restartBtnRect.y && mousePos.y < restartBtnRect.y + restartBtnRect.h) {
-            location.reload();
-        }
-        return;
-    }
+    if (isGameOver) return;
     if (energy >= 30 && !player.isDashing) {
         player.isDashing = true;
         player.dashTimer = 12;
@@ -112,10 +150,9 @@ window.addEventListener('mousedown', () => {
     }
 });
 
-// 重置障碍物定时器（用于难度上涨）
 function resetObstacleTimer() {
     if (obstacleTimer) clearInterval(obstacleTimer);
-    obstacleTimer = setInterval(spawnObstacle, spawnInterval);
+    if (!isGameOver) obstacleTimer = setInterval(spawnObstacle, spawnInterval);
 }
 
 function spawnObstacle() {
@@ -123,40 +160,18 @@ function spawnObstacle() {
     const side = Math.floor(Math.random() * 2);
     let x = (side === 0) ? -50 : canvas.width + 50;
     let y = Math.random() * canvas.height;
-    // 速度受倍率影响，最高 2 倍
-    let vx = (side === 0) ? 
-        (2 + Math.random() * 3) * enemySpeedMultiplier : 
-        -(2 + Math.random() * 3) * enemySpeedMultiplier;
-    obstacles.push({ x, y, vx, vy: 0, size: 25 });
-}
-
-function updateDifficulty() {
-    const elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
-    
-    // 更新时间显示
-    const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
-    const secs = (elapsedSeconds % 60).toString().padStart(2, '0');
-    gameTimerEl.innerText = `${mins}:${secs}`;
-
-    // 每 30 秒增加数量（减少生成间隔），最高 2 倍（即 500ms）
-    let newInterval = 1000 - (Math.floor(elapsedSeconds / 30) * 250);
-    if (newInterval < 500) newInterval = 500;
-    if (newInterval !== spawnInterval) {
-        spawnInterval = newInterval;
-        resetObstacleTimer();
-    }
-
-    // 每 60 秒增加移速，最高 2 倍
-    let newMultiplier = 1 + (Math.floor(elapsedSeconds / 60) * 0.5);
-    if (newMultiplier > 2) newMultiplier = 2;
-    enemySpeedMultiplier = newMultiplier;
+    let vx = (side === 0) ? (2 + Math.random() * 3) * enemySpeedMultiplier : -(2 + Math.random() * 3) * enemySpeedMultiplier;
+    obstacles.push({ x, y, vx, size: 25 });
 }
 
 function update() {
-    if (isGameOver) { draw(); return; }
+    if (isGameOver) return;
 
-    updateDifficulty();
+    // 难度及时间更新
+    const elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+    gameTimerEl.innerText = `${Math.floor(elapsedSeconds/60).toString().padStart(2,'0')}:${(elapsedSeconds%60).toString().padStart(2,'0')}`;
 
+    // 移动逻辑
     let dx = 0, dy = 0;
     if (keys.w) dy -= 1; if (keys.s) dy += 1;
     if (keys.a) dx -= 1; if (keys.d) dx += 1;
@@ -177,23 +192,57 @@ function update() {
     if (energy < 100) energy += 0.4;
     energyInner.style.width = energy + "%";
 
-    const distToTarget = Math.hypot(player.x - currentTarget.x, player.y - currentTarget.y);
-    if (distToTarget < player.size + 20) {
-        if (!hasPackage) {
-            hasPackage = true; 
-            spawnNewTask();
-        } else {
-            hasPackage = false; 
-            score++;
-            scoreEl.innerText = score;
-            spawnNewTask();
+    // 目标逻辑
+    if (Math.hypot(player.x - currentTarget.x, player.y - currentTarget.y) < player.size + 20) {
+        hasPackage = !hasPackage;
+        if (!hasPackage) { score++; scoreEl.innerText = score; }
+        spawnNewTask();
+    }
+
+    // 道具拾取逻辑
+    trySpawnPowerUp();
+    if (powerUp && Math.hypot(player.x - powerUp.x, player.y - powerUp.y) < player.size + 20) {
+        attackTimer = 300; // 约 5 秒
+        powerUp = null;
+        updateTag();
+    }
+
+    // 攻击模式逻辑
+    if (attackTimer > 0) {
+        attackTimer--;
+        modeName.innerText = "超辣喷火模式!";
+        modeName.style.color = "red";
+        if (attackTimer % 5 === 0) fireBullet(); // 连发子弹
+        if (attackTimer === 0) {
+            modeName.innerText = "常规配送";
+            modeName.style.color = "#666";
+            updateTag();
         }
     }
 
+    // 子弹更新与碰撞
+    bullets.forEach((b, bi) => {
+        b.x += b.vx; b.y += b.vy;
+        obstacles.forEach((obs, oi) => {
+            if (Math.hypot(b.x - obs.x, b.y - obs.y) < obs.size + 10) {
+                obstacles.splice(oi, 1);
+                bullets.splice(bi, 1);
+                score += 0.1; // 击毁敌人微量加分
+                scoreEl.innerText = Math.floor(score);
+            }
+        });
+        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(bi, 1);
+    });
+
+    // 障碍物碰撞
     obstacles.forEach((obs, i) => {
         obs.x += obs.vx;
         if(Math.hypot(player.x - obs.x, player.y - obs.y) < player.size + obs.size - 8) {
-            if(!player.isDashing) isGameOver = true;
+            if(!player.isDashing) {
+                isGameOver = true;
+                deathScreen.style.display = 'flex';
+                document.getElementById('finalStats').innerText = `送达：${Math.floor(score)} | 存活：${gameTimerEl.innerText}`;
+            }
         }
         if(obs.x < -100 || obs.x > canvas.width + 100) obstacles.splice(i, 1);
     });
@@ -205,96 +254,72 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // 绘制背景网格
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
     for(let i=0; i<canvas.height; i+=60) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
 
+    // 绘制道具
+    if (powerUp) {
+        ctx.fillStyle = "#f44336";
+        ctx.beginPath(); ctx.arc(powerUp.x, powerUp.y, 15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "white"; ctx.font = "16px Arial"; ctx.fillText("🌶️", powerUp.x-8, powerUp.y+6);
+    }
+
+    // 绘制子弹
+    bullets.forEach(b => {
+        ctx.fillStyle = "#ff5722";
+        ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
+    });
+
+// 绘制目标（已还原回初始样式）
     if (!hasPackage) {
-        ctx.fillStyle = "#ffeb3b";
-        ctx.shadowBlur = 15; ctx.shadowColor = "yellow";
-        ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30);
+        // 未取货：黄色小方块 + 霓虹发光
+        ctx.fillStyle = "#ffeb3b"; 
+        ctx.shadowBlur = 15; 
+        ctx.shadowColor = "yellow";
+        ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30); 
         ctx.shadowBlur = 0;
     } else {
-        ctx.setLineDash([5, 5]);
+        // 配送中：绿色虚线圆圈 + 文字提示
+        ctx.setLineDash([5, 5]); 
         ctx.strokeStyle = "#2e7d32";
         ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(currentTarget.x, currentTarget.y, 40, 0, Math.PI*2); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = "rgba(46, 125, 50, 0.2)";
+        ctx.beginPath(); 
+        ctx.arc(currentTarget.x, currentTarget.y, 40, 0, Math.PI*2); 
+        ctx.stroke();
+        ctx.setLineDash([]); 
+        
+        ctx.fillStyle = "rgba(46, 125, 50, 0.2)"; 
         ctx.fill();
+        
         ctx.fillStyle = "#2e7d32";
-        ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
+        ctx.font = "bold 14px Arial"; 
+        ctx.textAlign = "center";
         ctx.fillText("送至此处", currentTarget.x, currentTarget.y + 5);
     }
 
-    const angleToTarget = Math.atan2(currentTarget.y - player.y, currentTarget.x - player.x);
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    ctx.rotate(angleToTarget);
-    ctx.fillStyle = hasPackage ? "#4caf50" : "#ff9800";
-    ctx.beginPath();
-    ctx.moveTo(40, 0); ctx.lineTo(30, -8); ctx.lineTo(30, 8); 
-    ctx.fill();
-    ctx.restore();
-
+    // 绘制障碍物
     obstacles.forEach(obs => {
-        ctx.fillStyle = "#37474f";
-        ctx.beginPath(); ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#37474f"; ctx.beginPath(); ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = "white"; ctx.fillText("🛵", obs.x-10, obs.y+5);
     });
 
+    // 绘制玩家
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(Math.atan2(mousePos.y - player.y, mousePos.x - player.x));
-    ctx.fillStyle = player.isDashing ? "#ff5252" : "#1976d2";
+    ctx.fillStyle = attackTimer > 0 ? "#f44336" : (player.isDashing ? "#ff5252" : "#1976d2");
     ctx.beginPath(); ctx.arc(0, 0, player.size, 0, Math.PI*2); ctx.fill();
-    if(hasPackage) {
-        ctx.fillStyle = "#ffeb3b";
-        ctx.fillRect(-22, -10, 10, 20);
+    if(attackTimer > 0) { // 攻击模式特效
+        ctx.strokeStyle = "yellow"; ctx.lineWidth = 3; ctx.stroke();
     }
     ctx.fillStyle = "white"; ctx.fillRect(10, -3, 8, 6);
     ctx.restore();
-
-    if (isGameOver) {
-        ctx.fillStyle = "rgba(0,0,0,0.8)";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "white"; ctx.textAlign="center";
-        ctx.font="bold 48px Arial"; ctx.fillText("事故发生！", canvas.width/2, canvas.height/2-20);
-        
-        ctx.fillStyle = "#4caf50";
-        ctx.beginPath(); ctx.roundRect(restartBtnRect.x, restartBtnRect.y, restartBtnRect.w, restartBtnRect.h, 15); ctx.fill();
-        ctx.fillStyle = "white"; ctx.font="bold 20px Arial";
-        ctx.fillText("返回中心重新接单", canvas.width/2, restartBtnRect.y+38);
-    }
 }
 
 init();
 update();
 </script>
-</body>
-</html>sss="stat-label">今日获得樱花</div>
-                <div class="stat-value">128 🌸</div>
-            </div>
-
-            <div>
-                <div class="stat-label">每日任务</div>
-                <div class="quest-item">
-                    <div class="dot done"></div> 访问像素广工 (1/1)
-                </div>
-                <div class="quest-item">
-                    <div class="dot"></div> 击落 5 架精英机 (0/5)
-                </div>
-                <div class="quest-item">
-                    <div class="dot"></div> 接住 50 片樱花 (0/50)
-                </div>
-            </div>
-
-            <div class="announcement">
-                <strong>广播站：</strong>
-                《雷霆战机》现已上线！鼠标控制，火力全开，你能拿到 1000 分吗？
-            </div>
-        </div>
-    </div>
-
 </body>
 </html>
