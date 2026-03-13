@@ -2,21 +2,40 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>广工外卖王 - 武装进化版</title>
+    <title>广工外卖王 - 计分分离版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #a5d6a7; font-family: 'PingFang SC', sans-serif; }
         canvas { display: block; background: #81c784; cursor: crosshair; }
-        .ui {
+        
+        .order-badge {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(255,255,255,0.95);
-            padding: 15px 25px; border-radius: 20px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            pointer-events: none; z-index: 10;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white; padding: 10px 25px; border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(245,124,0,0.4);
+            border: 3px solid #fff; z-index: 10;
         }
-        .status-tag { 
-            display: inline-block; padding: 4px 12px; border-radius: 10px; 
-            font-size: 14px; font-weight: bold; margin-bottom: 8px;
+        .order-count { font-size: 32px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .order-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .player-status {
+            position: absolute; top: 110px; left: 25px;
+            background: rgba(255,255,255,0.9); padding: 12px;
+            border-radius: 15px; font-size: 14px; z-index: 10;
         }
+
+        .score-board {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            width: 200px; padding: 20px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-left: 5px solid #4caf50; z-index: 10;
+        }
+        .board-title { font-weight: bold; color: #2e7d32; border-bottom: 2px solid #eee; margin-bottom: 10px; padding-bottom: 5px; }
+        .stat-item { margin-bottom: 12px; }
+        .stat-label { font-size: 11px; color: #777; }
+        .stat-val { font-size: 20px; font-weight: bold; color: #333; }
+
+        .status-tag { display: inline-block; padding: 4px 10px; border-radius: 8px; font-weight: bold; margin-bottom: 5px; }
         .waiting { background: #ffe0b2; color: #ef6c00; }
         .delivering { background: #c8e6c9; color: #2e7d32; }
         .powerup { background: #f44336; color: white; animation: blink 0.5s infinite; }
@@ -37,15 +56,34 @@
 </head>
 <body>
 
-    <div class="ui">
+    <div class="order-badge">
+        <div class="order-label">已送达订单</div>
+        <div class="order-count" id="orderScore">0</div>
+    </div>
+
+    <div class="player-status">
         <div id="statusTag" class="status-tag waiting">等待接单...</div>
-        <div style="font-size: 14px; color: #666;">存活时间: <span id="gameTimer">00:00</span></div>
-        <div style="font-size: 24px; font-weight: bold; color: #333;">送达订单: <span id="score">0</span></div>
-        <div style="margin-top: 5px; font-size: 14px; color: #666;">
-            模式：<span id="modeName">常规配送</span><br>
-            能量: <div style="width:100px; height:8px; background:#eee; display:inline-block; border-radius:4px;">
+        <div>⏱️ 存活: <span id="gameTimer">00:00</span></div>
+        <div style="margin-top:5px">⚡ 能量: 
+            <div style="width:80px; height:8px; background:#eee; display:inline-block; border-radius:4px; vertical-align:middle;">
                 <div id="energyInner" style="width:100%; height:100%; background:#ff9800; border-radius:4px;"></div>
             </div>
+        </div>
+    </div>
+
+    <div class="score-board">
+        <div class="board-title">📊 广工校园统计</div>
+        <div class="stat-item">
+            <div class="stat-label">战斗积分 (击毁奖励)</div>
+            <div class="stat-val" id="combatScore">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">今日樱花</div>
+            <div class="stat-val">128 🌸</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">当前模式</div>
+            <div id="modeName" style="font-weight:bold; color:#666;">常规配送</div>
         </div>
     </div>
 
@@ -60,14 +98,20 @@
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const scoreEl = document.getElementById('score');
+
+// UI 元素
+const orderScoreEl = document.getElementById('orderScore');
+const combatScoreEl = document.getElementById('combatScore');
 const statusTag = document.getElementById('statusTag');
 const energyInner = document.getElementById('energyInner');
 const gameTimerEl = document.getElementById('gameTimer');
 const deathScreen = document.getElementById('deathScreen');
 const modeName = document.getElementById('modeName');
 
-let score = 0;
+// 计分变量分离
+let orderScore = 0;   // 送货分 (整数)
+let combatScore = 0;  // 战斗分 (整数)
+
 let energy = 100;
 let isGameOver = false;
 let mousePos = { x: 0, y: 0 };
@@ -75,14 +119,11 @@ let gameStartTime = Date.now();
 let spawnInterval = 1000;
 let enemySpeedMultiplier = 1;
 let obstacleTimer = null;
-
 let hasPackage = false; 
 let currentTarget = { x: 0, y: 0, size: 40 }; 
-
-// 新增道具和子弹系统
-let powerUp = null; // {x, y, type}
+let powerUp = null;
 let bullets = [];
-let attackTimer = 0; // 攻击剩余时间
+let attackTimer = 0;
 
 const player = { x: 0, y: 0, size: 22, speed: 4.5, isDashing: false, dashTimer: 0 };
 const keys = { w: false, a: false, s: false, d: false };
@@ -117,25 +158,15 @@ function updateTag() {
     }
 }
 
-// 随机生成道具 (低概率)
 function trySpawnPowerUp() {
-    if (!powerUp && Math.random() < 0.002) { // 每一帧 0.2% 概率
-        powerUp = {
-            x: 100 + Math.random() * (canvas.width - 200),
-            y: 100 + Math.random() * (canvas.height - 200),
-            size: 25
-        };
+    if (!powerUp && Math.random() < 0.002) {
+        powerUp = { x: 100 + Math.random() * (canvas.width - 200), y: 100 + Math.random() * (canvas.height - 200), size: 25 };
     }
 }
 
 function fireBullet() {
     const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-    bullets.push({
-        x: player.x,
-        y: player.y,
-        vx: Math.cos(angle) * 10,
-        vy: Math.sin(angle) * 10
-    });
+    bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 10, vy: Math.sin(angle) * 10 });
 }
 
 window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
@@ -143,11 +174,7 @@ window.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key.toLowerCase
 window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
 window.addEventListener('mousedown', () => {
     if (isGameOver) return;
-    if (energy >= 30 && !player.isDashing) {
-        player.isDashing = true;
-        player.dashTimer = 12;
-        energy -= 30;
-    }
+    if (energy >= 30 && !player.isDashing) { player.isDashing = true; player.dashTimer = 12; energy -= 30; }
 });
 
 function resetObstacleTimer() {
@@ -166,12 +193,9 @@ function spawnObstacle() {
 
 function update() {
     if (isGameOver) return;
-
-    // 难度及时间更新
     const elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
     gameTimerEl.innerText = `${Math.floor(elapsedSeconds/60).toString().padStart(2,'0')}:${(elapsedSeconds%60).toString().padStart(2,'0')}`;
 
-    // 移动逻辑
     let dx = 0, dy = 0;
     if (keys.w) dy -= 1; if (keys.s) dy += 1;
     if (keys.a) dx -= 1; if (keys.d) dx += 1;
@@ -183,58 +207,158 @@ function update() {
 
     if (player.isDashing) {
         const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-        player.x += Math.cos(angle) * 16;
-        player.y += Math.sin(angle) * 16;
-        player.dashTimer--;
-        if (player.dashTimer <= 0) player.isDashing = false;
+        player.x += Math.cos(angle) * 16; player.y += Math.sin(angle) * 16;
+        player.dashTimer--; if (player.dashTimer <= 0) player.isDashing = false;
     }
 
     if (energy < 100) energy += 0.4;
     energyInner.style.width = energy + "%";
 
-    // 目标逻辑
+    // 送货计分逻辑
+    if (Math.hypot(player.x - currentTarget.x, player.y - currentTarget.y) < player.size + 20) {
+        hasPackage = !hasPackage;
+        if (!hasPackage) { 
+            orderScore++; 
+            orderScoreEl.innerText = orderScore; // 更新左侧大勋章
+        }
+        spawnNewTask();
+    }
+
+    trySpawnPowerUp();
+    if (powerUp && Math.hypot(player.x - powerUp.x, player.y - powerUp.y) < player.size + 20) {
+        attackTimer = 300; powerUp = null; updateTag();
+    }
+
+    if (attackTimer > 0) {
+        attackTimer--;
+        modeName.innerText = "超辣喷火模式!";
+        modeName.style.color = "red";
+        if (attackTimer % 5 === 0) fireBullet();
+        if (attackTimer === 0) { modeName.innerText = "常规配送"; modeName.style.color = "#666"; updateTag(); }
+    }
+
+    // 战斗计分逻辑
+    bullets.forEach((b, bi) => {
+        b.x += b.vx; b.y += b.vy;
+        obstacles.forEach((obs, oi) => {
+            if (Math.hypot(b.x - obs.x, b.y - obs.y) < obs.size + 10) {
+                obstacles.splice(oi, 1); 
+                bullets.splice(bi, 1);
+                combatScore += 10; // 击毁加10分
+                combatScoreEl.innerText = combatScore; // 更新右侧看板
+            }
+        });
+        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(bi, 1);
+    });
+
+    obstacles.forEach((obs, i) => {
+        obs.x += obs.vx;
+        if(Math.hypot(player.x - obs.x, player.y - obs.y) < player.size + obs.size - 8) {
+            if(!player.isDashing) {
+                isGameOver = true;
+                deathScreen.style.display = 'flex';
+                document.getElementById('finalStats').innerText = `送单：${orderScore} | 战斗分：${combatScore} | 存活：${gameTimerEl.innerText}`;
+            }
+        }
+        if(obs.x < -100 || obs.x > canvas.width + 100) obstacles.splice(i, 1);
+    });
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+    for(let i=0; i<canvas.height; i+=60) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+
+    if (powerUp) {
+        ctx.fillStyle = "#f44336"; ctx.beginPath(); ctx.arc(powerUp.x, powerUp.y, 15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "white"; ctx.font = "16px Arial"; ctx.fillText("🌶️", powerUp.x-8, powerUp.y+6);
+    }
+    bullets.forEach(b => { ctx.fillStyle = "#ff5722"; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill(); });
+
+    if (!hasPackage) {
+        ctx.fillStyle = "#ffeb3b"; ctx.shadowBlur = 15; ctx.shadowColor = "yellow";
+        ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30); ctx.shadowBlur = 0;
+    } else {
+        ctx.setLineDash([5, 5]); ctx.strokeStyle = "#2e7d32"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(currentTarget.x, currentTarget.y, 40, 0, Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = "rgba(46, 125, 50, 0.2)"; ctx.fill();
+        ctx.fillStyle = "#2e7d32"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
+        ctx.fillText("送至此处", currentTarget.x, currentTarget.y + 5);
+    }
+
+    obstacles.forEach(obs => {
+        ctx.fillStyle = "#37474f"; ctx.beginPath(); ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "white"; ctx.fillText("🛵", obs.x-10, obs.y+5);
+    });
+
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(Math.atan2(mousePos.y - player.y, mousePos.x - player.x));
+    ctx.fillStyle = attackTimer > 0 ? "#f44336" : (player.isDashing ? "#ff5252" : "#1976d2");
+    ctx.beginPath(); ctx.arc(0, 0, player.size, 0, Math.PI*2); ctx.fill();
+    if(attackTimer > 0) { ctx.strokeStyle = "yellow"; ctx.lineWidth = 3; ctx.stroke(); }
+    ctx.fillStyle = "white"; ctx.fillRect(10, -3, 8, 6);
+    ctx.restore();
+}
+
+init();
+update();
+</script>
+</body>
+</html>a,'0')}`;
+
+    let dx = 0, dy = 0;
+    if (keys.w) dy -= 1; if (keys.s) dy += 1;
+    if (keys.a) dx -= 1; if (keys.d) dx += 1;
+    if (dx !== 0 || dy !== 0) {
+        const mag = Math.sqrt(dx*dx + dy*dy);
+        player.x += (dx/mag) * player.speed;
+        player.y += (dy/mag) * player.speed;
+    }
+
+    if (player.isDashing) {
+        const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+        player.x += Math.cos(angle) * 16; player.y += Math.sin(angle) * 16;
+        player.dashTimer--; if (player.dashTimer <= 0) player.isDashing = false;
+    }
+
+    if (energy < 100) energy += 0.4;
+    energyInner.style.width = energy + "%";
+
     if (Math.hypot(player.x - currentTarget.x, player.y - currentTarget.y) < player.size + 20) {
         hasPackage = !hasPackage;
         if (!hasPackage) { score++; scoreEl.innerText = score; }
         spawnNewTask();
     }
 
-    // 道具拾取逻辑
     trySpawnPowerUp();
     if (powerUp && Math.hypot(player.x - powerUp.x, player.y - powerUp.y) < player.size + 20) {
-        attackTimer = 300; // 约 5 秒
-        powerUp = null;
-        updateTag();
+        attackTimer = 300; powerUp = null; updateTag();
     }
 
-    // 攻击模式逻辑
     if (attackTimer > 0) {
         attackTimer--;
         modeName.innerText = "超辣喷火模式!";
         modeName.style.color = "red";
-        if (attackTimer % 5 === 0) fireBullet(); // 连发子弹
-        if (attackTimer === 0) {
-            modeName.innerText = "常规配送";
-            modeName.style.color = "#666";
-            updateTag();
-        }
+        if (attackTimer % 5 === 0) fireBullet();
+        if (attackTimer === 0) { modeName.innerText = "常规配送"; modeName.style.color = "#666"; updateTag(); }
     }
 
-    // 子弹更新与碰撞
     bullets.forEach((b, bi) => {
         b.x += b.vx; b.y += b.vy;
         obstacles.forEach((obs, oi) => {
             if (Math.hypot(b.x - obs.x, b.y - obs.y) < obs.size + 10) {
-                obstacles.splice(oi, 1);
-                bullets.splice(bi, 1);
-                score += 0.1; // 击毁敌人微量加分
-                scoreEl.innerText = Math.floor(score);
+                obstacles.splice(oi, 1); bullets.splice(bi, 1);
+                score += 0.1; scoreEl.innerText = Math.floor(score);
             }
         });
         if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(bi, 1);
     });
 
-    // 障碍物碰撞
     obstacles.forEach((obs, i) => {
         obs.x += obs.vx;
         if(Math.hypot(player.x - obs.x, player.y - obs.y) < player.size + obs.size - 8) {
@@ -253,67 +377,39 @@ function update() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 绘制背景网格
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
     for(let i=0; i<canvas.height; i+=60) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
 
-    // 绘制道具
     if (powerUp) {
-        ctx.fillStyle = "#f44336";
-        ctx.beginPath(); ctx.arc(powerUp.x, powerUp.y, 15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#f44336"; ctx.beginPath(); ctx.arc(powerUp.x, powerUp.y, 15, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = "white"; ctx.font = "16px Arial"; ctx.fillText("🌶️", powerUp.x-8, powerUp.y+6);
     }
 
-    // 绘制子弹
-    bullets.forEach(b => {
-        ctx.fillStyle = "#ff5722";
-        ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
-    });
+    bullets.forEach(b => { ctx.fillStyle = "#ff5722"; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill(); });
 
-// 绘制目标（已还原回初始样式）
     if (!hasPackage) {
-        // 未取货：黄色小方块 + 霓虹发光
-        ctx.fillStyle = "#ffeb3b"; 
-        ctx.shadowBlur = 15; 
-        ctx.shadowColor = "yellow";
-        ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30); 
-        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#ffeb3b"; ctx.shadowBlur = 15; ctx.shadowColor = "yellow";
+        ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30); ctx.shadowBlur = 0;
     } else {
-        // 配送中：绿色虚线圆圈 + 文字提示
-        ctx.setLineDash([5, 5]); 
-        ctx.strokeStyle = "#2e7d32";
-        ctx.lineWidth = 3;
-        ctx.beginPath(); 
-        ctx.arc(currentTarget.x, currentTarget.y, 40, 0, Math.PI*2); 
-        ctx.stroke();
-        ctx.setLineDash([]); 
-        
-        ctx.fillStyle = "rgba(46, 125, 50, 0.2)"; 
-        ctx.fill();
-        
-        ctx.fillStyle = "#2e7d32";
-        ctx.font = "bold 14px Arial"; 
-        ctx.textAlign = "center";
+        ctx.setLineDash([5, 5]); ctx.strokeStyle = "#2e7d32"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(currentTarget.x, currentTarget.y, 40, 0, Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = "rgba(46, 125, 50, 0.2)"; ctx.fill();
+        ctx.fillStyle = "#2e7d32"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
         ctx.fillText("送至此处", currentTarget.x, currentTarget.y + 5);
     }
 
-    // 绘制障碍物
     obstacles.forEach(obs => {
         ctx.fillStyle = "#37474f"; ctx.beginPath(); ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = "white"; ctx.fillText("🛵", obs.x-10, obs.y+5);
     });
 
-    // 绘制玩家
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(Math.atan2(mousePos.y - player.y, mousePos.x - player.x));
     ctx.fillStyle = attackTimer > 0 ? "#f44336" : (player.isDashing ? "#ff5252" : "#1976d2");
     ctx.beginPath(); ctx.arc(0, 0, player.size, 0, Math.PI*2); ctx.fill();
-    if(attackTimer > 0) { // 攻击模式特效
-        ctx.strokeStyle = "yellow"; ctx.lineWidth = 3; ctx.stroke();
-    }
+    if(attackTimer > 0) { ctx.strokeStyle = "yellow"; ctx.lineWidth = 3; ctx.stroke(); }
     ctx.fillStyle = "white"; ctx.fillRect(10, -3, 8, 6);
     ctx.restore();
 }
