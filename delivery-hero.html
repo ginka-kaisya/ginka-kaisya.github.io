@@ -25,6 +25,7 @@
 
     <div class="ui">
         <div id="statusTag" class="status-tag waiting">等待接单...</div>
+        <div style="font-size: 14px; color: #666;">存活时间: <span id="gameTimer">00:00</span></div>
         <div style="font-size: 24px; font-weight: bold; color: #333;">送达订单: <span id="score">0</span></div>
         <div style="margin-top: 5px; font-size: 14px; color: #666;">
             能量: <div style="width:100px; height:8px; background:#eee; display:inline-block; border-radius:4px;">
@@ -41,6 +42,7 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const statusTag = document.getElementById('statusTag');
 const energyInner = document.getElementById('energyInner');
+const gameTimerEl = document.getElementById('gameTimer'); // 时间显示元素
 
 let score = 0;
 let energy = 100;
@@ -48,9 +50,15 @@ let isGameOver = false;
 let mousePos = { x: 0, y: 0 };
 let restartBtnRect = { x: 0, y: 0, w: 200, h: 60 };
 
+// 难度控制变量
+let gameStartTime = Date.now();
+let spawnInterval = 1000; // 初始 1 秒一个敌人
+let enemySpeedMultiplier = 1; // 初始速度倍率
+let obstacleTimer = null;
+
 // 核心逻辑变量
-let hasPackage = false; // 是否已取货
-let currentTarget = { x: 0, y: 0, size: 40 }; // 当前目标（取货点或送货点）
+let hasPackage = false; 
+let currentTarget = { x: 0, y: 0, size: 40 }; 
 
 const player = {
     x: 0, y: 0, size: 22, speed: 4.5,
@@ -67,12 +75,11 @@ function init() {
     player.y = canvas.height / 2;
     restartBtnRect.x = canvas.width / 2 - 100;
     restartBtnRect.y = canvas.height / 2 + 50;
-    spawnNewTask(); // 游戏开始生成第一个任务
+    spawnNewTask();
+    resetObstacleTimer(); // 初始化障碍物生成器
 }
 
-// 生成新目标：要么生成包裹，要么生成配送点
 function spawnNewTask() {
-    // 随机位置（保留边缘间距）
     const margin = 100;
     currentTarget.x = margin + Math.random() * (canvas.width - margin * 2);
     currentTarget.y = margin + Math.random() * (canvas.height - margin * 2);
@@ -105,20 +112,51 @@ window.addEventListener('mousedown', () => {
     }
 });
 
+// 重置障碍物定时器（用于难度上涨）
+function resetObstacleTimer() {
+    if (obstacleTimer) clearInterval(obstacleTimer);
+    obstacleTimer = setInterval(spawnObstacle, spawnInterval);
+}
+
 function spawnObstacle() {
     if(isGameOver) return;
     const side = Math.floor(Math.random() * 2);
     let x = (side === 0) ? -50 : canvas.width + 50;
     let y = Math.random() * canvas.height;
-    let vx = (side === 0) ? (2 + Math.random() * 3) : -(2 + Math.random() * 3);
+    // 速度受倍率影响，最高 2 倍
+    let vx = (side === 0) ? 
+        (2 + Math.random() * 3) * enemySpeedMultiplier : 
+        -(2 + Math.random() * 3) * enemySpeedMultiplier;
     obstacles.push({ x, y, vx, vy: 0, size: 25 });
 }
-setInterval(spawnObstacle, 1000);
+
+function updateDifficulty() {
+    const elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+    
+    // 更新时间显示
+    const mins = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+    const secs = (elapsedSeconds % 60).toString().padStart(2, '0');
+    gameTimerEl.innerText = `${mins}:${secs}`;
+
+    // 每 30 秒增加数量（减少生成间隔），最高 2 倍（即 500ms）
+    let newInterval = 1000 - (Math.floor(elapsedSeconds / 30) * 250);
+    if (newInterval < 500) newInterval = 500;
+    if (newInterval !== spawnInterval) {
+        spawnInterval = newInterval;
+        resetObstacleTimer();
+    }
+
+    // 每 60 秒增加移速，最高 2 倍
+    let newMultiplier = 1 + (Math.floor(elapsedSeconds / 60) * 0.5);
+    if (newMultiplier > 2) newMultiplier = 2;
+    enemySpeedMultiplier = newMultiplier;
+}
 
 function update() {
     if (isGameOver) { draw(); return; }
 
-    // 移动逻辑
+    updateDifficulty();
+
     let dx = 0, dy = 0;
     if (keys.w) dy -= 1; if (keys.s) dy += 1;
     if (keys.a) dx -= 1; if (keys.d) dx += 1;
@@ -139,21 +177,19 @@ function update() {
     if (energy < 100) energy += 0.4;
     energyInner.style.width = energy + "%";
 
-    // 任务碰撞检测
     const distToTarget = Math.hypot(player.x - currentTarget.x, player.y - currentTarget.y);
     if (distToTarget < player.size + 20) {
         if (!hasPackage) {
-            hasPackage = true; // 取到货了
+            hasPackage = true; 
             spawnNewTask();
         } else {
-            hasPackage = false; // 送到货了
+            hasPackage = false; 
             score++;
             scoreEl.innerText = score;
             spawnNewTask();
         }
     }
 
-    // 障碍物逻辑
     obstacles.forEach((obs, i) => {
         obs.x += obs.vx;
         if(Math.hypot(player.x - obs.x, player.y - obs.y) < player.size + obs.size - 8) {
@@ -169,20 +205,16 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 背景网格
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
     for(let i=0; i<canvas.height; i+=60) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
 
-    // 1. 绘制当前目标
     if (!hasPackage) {
-        // 取货点：黄色方块包裹
         ctx.fillStyle = "#ffeb3b";
         ctx.shadowBlur = 15; ctx.shadowColor = "yellow";
         ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30);
         ctx.shadowBlur = 0;
     } else {
-        // 送货点：绿色虚线圆圈
         ctx.setLineDash([5, 5]);
         ctx.strokeStyle = "#2e7d32";
         ctx.lineWidth = 3;
@@ -195,31 +227,27 @@ function draw() {
         ctx.fillText("送至此处", currentTarget.x, currentTarget.y + 5);
     }
 
-    // 2. 绘制方向箭头（当目标在屏幕外或较远时非常有用）
     const angleToTarget = Math.atan2(currentTarget.y - player.y, currentTarget.x - player.x);
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(angleToTarget);
     ctx.fillStyle = hasPackage ? "#4caf50" : "#ff9800";
     ctx.beginPath();
-    ctx.moveTo(40, 0); ctx.lineTo(30, -8); ctx.lineTo(30, 8); // 绘制箭头
+    ctx.moveTo(40, 0); ctx.lineTo(30, -8); ctx.lineTo(30, 8); 
     ctx.fill();
     ctx.restore();
 
-    // 3. 绘制障碍物
     obstacles.forEach(obs => {
         ctx.fillStyle = "#37474f";
         ctx.beginPath(); ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI*2); ctx.fill();
         ctx.fillStyle = "white"; ctx.fillText("🛵", obs.x-10, obs.y+5);
     });
 
-    // 4. 绘制玩家
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(Math.atan2(mousePos.y - player.y, mousePos.x - player.x));
     ctx.fillStyle = player.isDashing ? "#ff5252" : "#1976d2";
     ctx.beginPath(); ctx.arc(0, 0, player.size, 0, Math.PI*2); ctx.fill();
-    // 如果带着货，画个小背囊
     if(hasPackage) {
         ctx.fillStyle = "#ffeb3b";
         ctx.fillRect(-22, -10, 10, 20);
@@ -243,5 +271,30 @@ function draw() {
 init();
 update();
 </script>
+</body>
+</html>sss="stat-label">今日获得樱花</div>
+                <div class="stat-value">128 🌸</div>
+            </div>
+
+            <div>
+                <div class="stat-label">每日任务</div>
+                <div class="quest-item">
+                    <div class="dot done"></div> 访问像素广工 (1/1)
+                </div>
+                <div class="quest-item">
+                    <div class="dot"></div> 击落 5 架精英机 (0/5)
+                </div>
+                <div class="quest-item">
+                    <div class="dot"></div> 接住 50 片樱花 (0/50)
+                </div>
+            </div>
+
+            <div class="announcement">
+                <strong>广播站：</strong>
+                《雷霆战机》现已上线！鼠标控制，火力全开，你能拿到 1000 分吗？
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
