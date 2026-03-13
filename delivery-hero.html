@@ -2,28 +2,34 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>广工外卖王 - 避障大挑战</title>
+    <title>广工外卖王 - 职业送货版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #a5d6a7; font-family: 'PingFang SC', sans-serif; }
         canvas { display: block; background: #81c784; cursor: crosshair; }
         .ui {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             padding: 15px 25px; border-radius: 20px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
             pointer-events: none; z-index: 10;
         }
-        #energyBar { width: 100px; height: 10px; background: #eee; display: inline-block; border-radius: 5px; overflow: hidden; }
-        #energyInner { width: 100%; height: 100%; background: #ff9800; transition: width 0.1s; }
+        .status-tag { 
+            display: inline-block; padding: 4px 12px; border-radius: 10px; 
+            font-size: 14px; font-weight: bold; margin-bottom: 8px;
+        }
+        .waiting { background: #ffe0b2; color: #ef6c00; }
+        .delivering { background: #c8e6c9; color: #2e7d32; }
     </style>
 </head>
 <body>
 
     <div class="ui">
-        <div style="font-size: 24px; font-weight: bold; color: #2e7d32;">外卖箱: <span id="score">0</span></div>
-        <div style="font-size: 14px; color: #666;">
-            冲刺能量 (右键/左键): 
-            <div id="energyBar"><div id="energyInner"></div></div>
+        <div id="statusTag" class="status-tag waiting">等待接单...</div>
+        <div style="font-size: 24px; font-weight: bold; color: #333;">送达订单: <span id="score">0</span></div>
+        <div style="margin-top: 5px; font-size: 14px; color: #666;">
+            能量: <div style="width:100px; height:8px; background:#eee; display:inline-block; border-radius:4px;">
+                <div id="energyInner" style="width:100%; height:100%; background:#ff9800; border-radius:4px;"></div>
+            </div>
         </div>
     </div>
 
@@ -33,22 +39,25 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
+const statusTag = document.getElementById('statusTag');
 const energyInner = document.getElementById('energyInner');
 
-// 游戏核心状态
 let score = 0;
 let energy = 100;
 let isGameOver = false;
 let mousePos = { x: 0, y: 0 };
-let restartBtnRect = { x: 0, y: 0, w: 200, h: 60 }; // 按钮范围
+let restartBtnRect = { x: 0, y: 0, w: 200, h: 60 };
+
+// 核心逻辑变量
+let hasPackage = false; // 是否已取货
+let currentTarget = { x: 0, y: 0, size: 40 }; // 当前目标（取货点或送货点）
 
 const player = {
-    x: 0, y: 0, size: 22, speed: 4,
+    x: 0, y: 0, size: 22, speed: 4.5,
     isDashing: false, dashTimer: 0
 };
 
 const keys = { w: false, a: false, s: false, d: false };
-let items = [];
 let obstacles = [];
 
 function init() {
@@ -56,26 +65,39 @@ function init() {
     canvas.height = window.innerHeight;
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-    // 居中重开按钮坐标
     restartBtnRect.x = canvas.width / 2 - 100;
     restartBtnRect.y = canvas.height / 2 + 50;
+    spawnNewTask(); // 游戏开始生成第一个任务
 }
 
-// 监听控制
+// 生成新目标：要么生成包裹，要么生成配送点
+function spawnNewTask() {
+    // 随机位置（保留边缘间距）
+    const margin = 100;
+    currentTarget.x = margin + Math.random() * (canvas.width - margin * 2);
+    currentTarget.y = margin + Math.random() * (canvas.height - margin * 2);
+    
+    if (!hasPackage) {
+        statusTag.innerText = "前往取货点 📦";
+        statusTag.className = "status-tag waiting";
+    } else {
+        statusTag.innerText = "配送中... 🏁";
+        statusTag.className = "status-tag delivering";
+    }
+}
+
 window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
 window.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; });
 window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
 
 window.addEventListener('mousedown', () => {
     if (isGameOver) {
-        // 检测是否点击在重开按钮内
         if (mousePos.x > restartBtnRect.x && mousePos.x < restartBtnRect.x + restartBtnRect.w &&
             mousePos.y > restartBtnRect.y && mousePos.y < restartBtnRect.y + restartBtnRect.h) {
-            resetGame();
+            location.reload();
         }
         return;
     }
-    // 冲刺逻辑
     if (energy >= 30 && !player.isDashing) {
         player.isDashing = true;
         player.dashTimer = 12;
@@ -83,35 +105,20 @@ window.addEventListener('mousedown', () => {
     }
 });
 
-function spawnItem() { if(!isGameOver) items.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: 15 }); }
 function spawnObstacle() {
     if(isGameOver) return;
-    const side = Math.floor(Math.random() * 4);
-    let x, y, vx, vy;
-    if(side === 0) { x = -50; y = Math.random()*canvas.height; vx = 3+Math.random()*3; vy = 0; }
-    else { x = canvas.width+50; y = Math.random()*canvas.height; vx = -(3+Math.random()*3); vy = 0; }
-    obstacles.push({ x, y, vx, vy, size: 25 });
+    const side = Math.floor(Math.random() * 2);
+    let x = (side === 0) ? -50 : canvas.width + 50;
+    let y = Math.random() * canvas.height;
+    let vx = (side === 0) ? (2 + Math.random() * 3) : -(2 + Math.random() * 3);
+    obstacles.push({ x, y, vx, vy: 0, size: 25 });
 }
-
-setInterval(spawnItem, 2000);
-setInterval(spawnObstacle, 800);
-
-function resetGame() {
-    score = 0; scoreEl.innerText = "0";
-    energy = 100;
-    items = []; obstacles = [];
-    player.x = canvas.width/2; player.y = canvas.height/2;
-    isGameOver = false;
-    update();
-}
+setInterval(spawnObstacle, 1000);
 
 function update() {
-    if (isGameOver) {
-        draw(); // 最后画一遍以显示结算画面
-        return;
-    }
+    if (isGameOver) { draw(); return; }
 
-    // WASD 移动
+    // 移动逻辑
     let dx = 0, dy = 0;
     if (keys.w) dy -= 1; if (keys.s) dy += 1;
     if (keys.a) dx -= 1; if (keys.d) dx += 1;
@@ -121,32 +128,32 @@ function update() {
         player.y += (dy/mag) * player.speed;
     }
 
-    // 鼠标冲刺
     if (player.isDashing) {
         const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-        player.x += Math.cos(angle) * 15;
-        player.y += Math.sin(angle) * 15;
+        player.x += Math.cos(angle) * 16;
+        player.y += Math.sin(angle) * 16;
         player.dashTimer--;
         if (player.dashTimer <= 0) player.isDashing = false;
     }
 
-    // 能量回复
     if (energy < 100) energy += 0.4;
     energyInner.style.width = energy + "%";
 
-    // 边界限制
-    player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
-    player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
-
-    // 物品碰撞
-    items.forEach((it, i) => {
-        if(Math.hypot(player.x - it.x, player.y - it.y) < player.size + it.size) {
-            items.splice(i, 1);
-            score += 1; scoreEl.innerText = score;
+    // 任务碰撞检测
+    const distToTarget = Math.hypot(player.x - currentTarget.x, player.y - currentTarget.y);
+    if (distToTarget < player.size + 20) {
+        if (!hasPackage) {
+            hasPackage = true; // 取到货了
+            spawnNewTask();
+        } else {
+            hasPackage = false; // 送到货了
+            score++;
+            scoreEl.innerText = score;
+            spawnNewTask();
         }
-    });
+    }
 
-    // 敌人碰撞
+    // 障碍物逻辑
     obstacles.forEach((obs, i) => {
         obs.x += obs.vx;
         if(Math.hypot(player.x - obs.x, player.y - obs.y) < player.size + obs.size - 8) {
@@ -164,60 +171,72 @@ function draw() {
     
     // 背景网格
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
-    ctx.lineWidth = 2;
     for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
     for(let i=0; i<canvas.height; i+=60) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
 
-    // 画外卖箱
-    items.forEach(it => {
+    // 1. 绘制当前目标
+    if (!hasPackage) {
+        // 取货点：黄色方块包裹
         ctx.fillStyle = "#ffeb3b";
-        ctx.shadowBlur = 10; ctx.shadowColor = "yellow";
-        ctx.fillRect(it.x-10, it.y-10, 20, 20);
+        ctx.shadowBlur = 15; ctx.shadowColor = "yellow";
+        ctx.fillRect(currentTarget.x-15, currentTarget.y-15, 30, 30);
         ctx.shadowBlur = 0;
-    });
+    } else {
+        // 送货点：绿色虚线圆圈
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = "#2e7d32";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(currentTarget.x, currentTarget.y, 40, 0, Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(46, 125, 50, 0.2)";
+        ctx.fill();
+        ctx.fillStyle = "#2e7d32";
+        ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
+        ctx.fillText("送至此处", currentTarget.x, currentTarget.y + 5);
+    }
 
-    // 画电动车
+    // 2. 绘制方向箭头（当目标在屏幕外或较远时非常有用）
+    const angleToTarget = Math.atan2(currentTarget.y - player.y, currentTarget.x - player.x);
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(angleToTarget);
+    ctx.fillStyle = hasPackage ? "#4caf50" : "#ff9800";
+    ctx.beginPath();
+    ctx.moveTo(40, 0); ctx.lineTo(30, -8); ctx.lineTo(30, 8); // 绘制箭头
+    ctx.fill();
+    ctx.restore();
+
+    // 3. 绘制障碍物
     obstacles.forEach(obs => {
         ctx.fillStyle = "#37474f";
         ctx.beginPath(); ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "white"; ctx.font = "16px Arial";
-        ctx.fillText("🛵", obs.x-10, obs.y+5);
+        ctx.fillStyle = "white"; ctx.fillText("🛵", obs.x-10, obs.y+5);
     });
 
-    // 画玩家
+    // 4. 绘制玩家
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(Math.atan2(mousePos.y - player.y, mousePos.x - player.x));
     ctx.fillStyle = player.isDashing ? "#ff5252" : "#1976d2";
     ctx.beginPath(); ctx.arc(0, 0, player.size, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = "white"; ctx.fillRect(10, -3, 10, 6); // 车灯
+    // 如果带着货，画个小背囊
+    if(hasPackage) {
+        ctx.fillStyle = "#ffeb3b";
+        ctx.fillRect(-22, -10, 10, 20);
+    }
+    ctx.fillStyle = "white"; ctx.fillRect(10, -3, 8, 6);
     ctx.restore();
 
     if (isGameOver) {
-        // 1. 遮罩层
-        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 2. 死亡文字
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.font = "bold 48px PingFang SC";
-        ctx.fillText("外卖超时！", canvas.width/2, canvas.height/2 - 40);
-        ctx.font = "24px PingFang SC";
-        ctx.fillText(`最终评分: ${score} 星`, canvas.width/2, canvas.height/2 + 10);
-
-        // 3. 重开按钮
-        const isHover = mousePos.x > restartBtnRect.x && mousePos.x < restartBtnRect.x + restartBtnRect.w &&
-                        mousePos.y > restartBtnRect.y && mousePos.y < restartBtnRect.y + restartBtnRect.h;
+        ctx.fillStyle = "rgba(0,0,0,0.8)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "white"; ctx.textAlign="center";
+        ctx.font="bold 48px Arial"; ctx.fillText("事故发生！", canvas.width/2, canvas.height/2-20);
         
-        ctx.fillStyle = isHover ? "#81c784" : "#4caf50";
-        ctx.beginPath();
-        ctx.roundRect(restartBtnRect.x, restartBtnRect.y, restartBtnRect.w, restartBtnRect.h, 15);
-        ctx.fill();
-        
-        ctx.fillStyle = "white";
-        ctx.font = "bold 22px PingFang SC";
-        ctx.fillText("重新送餐", canvas.width/2, restartBtnRect.y + 38);
+        ctx.fillStyle = "#4caf50";
+        ctx.beginPath(); ctx.roundRect(restartBtnRect.x, restartBtnRect.y, restartBtnRect.w, restartBtnRect.h, 15); ctx.fill();
+        ctx.fillStyle = "white"; ctx.font="bold 20px Arial";
+        ctx.fillText("返回中心重新接单", canvas.width/2, restartBtnRect.y+38);
     }
 }
 
