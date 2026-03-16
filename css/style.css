@@ -65,6 +65,7 @@ body {
 .teru-head { 
     width: 40px; height: 40px; background: white; border: 3px solid #eee; 
     position: relative; image-rendering: pixelated;
+    border-radius: 50%; /* 将头部设置为圆形 */
 }
 .teru-eye { position: absolute; width: 4px; height: 4px; background: #37474f; top: 12px; }
 .teru-eye.left { left: 8px; }
