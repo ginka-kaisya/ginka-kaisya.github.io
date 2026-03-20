@@ -67,66 +67,91 @@ function render() {
 
 // --- 外部垂直拉伸晴天娃娃逻辑 ---
 const teru = document.getElementById('drag-teru');
+const ROOF_Y = 0; // 挂载点高度
+const ANCHOR_X = window.innerWidth * 0.85; // 对应 CSS 中的 right: 15%
+
 let isDragging = false;
-let startY = 0;
-let currentY = 0; // 当前拉伸的长度
-let velY = 0;    // 垂直速度
-const originalLength = 1; // 初始缩放比例
+let curPos = { x: 0, y: 0 }; // 偏移向量
+let vel = { x: 0, y: 0 };    // 速度向量
 
 teru.addEventListener('mousedown', (e) => {
     isDragging = true;
-    startY = e.clientY;
-    teru.style.transition = 'none'; // 拖动时关闭过渡
+    teru.style.animation = 'none';
+    teru.style.transition = 'none';
 });
 
 window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
 
-    const deltaY = e.clientY - startY;
+    // 计算鼠标相对于挂载点的偏移
+    // 注意：ANCHOR_X 需要根据窗口大小实时调整或固定
+    const rect = teru.parentElement.getBoundingClientRect();
+    const anchorX = rect.right - (window.innerWidth * 0.15); 
     
-    if (deltaY > 0) {
-        // 向下拖动时，增加拉伸感（控制最大拉伸长度，比如最大拉到 2 倍长）
-        currentY = 1 + (deltaY / 200); 
-        currentY = Math.min(currentY, 2.0); 
-        
-        // 应用 scaleY 形变：y轴拉长，x轴稍微变细（保持体积感）
-        const scaleX = 1 / Math.sqrt(currentY);
-        teru.style.transform = `scale(${scaleX}, ${currentY})`;
-    }
+    let dx = e.clientX - anchorX;
+    let dy = e.clientY - ROOF_Y;
+
+    // 限制向上拉动（保持在屋檐下方）
+    dy = Math.max(10, dy);
+
+    // 阻尼处理：让拉伸感更丝滑，不容易拉出屏幕
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const limitDist = 150 * Math.log1p(dist / 150);
+    const ratio = limitDist / dist;
+
+    curPos.x = dx * ratio;
+    curPos.y = dy * ratio;
+
+    applyTransform(curPos.x, curPos.y);
 });
 
 window.addEventListener('mouseup', () => {
     if (!isDragging) return;
     isDragging = false;
-    
-    // 记录当前位置作为初值，开始物理回弹
-    requestAnimationFrame(updateStretchPhysics);
+    requestAnimationFrame(updatePhysics);
 });
 
-function updateStretchPhysics() {
+function applyTransform(x, y) {
+    const angle = Math.atan2(x, y); // 计算旋转弧度
+    const dist = Math.sqrt(x * x + y * y);
+    const initialLen = 100; // 绳子+头部的基础长度
+    const scaleY = 1 + (dist - initialLen) / 200;
+    const finalScaleY = Math.max(1, scaleY);
+    const scaleX = 1 / Math.sqrt(finalScaleY);
+
+    // 转换为角度
+    const deg = -angle * (180 / Math.PI);
+    
+    teru.style.transform = `rotate(${deg}deg) scale(${scaleX}, ${finalScaleY})`;
+}
+
+function updatePhysics() {
     if (isDragging) return;
 
-    const k = 0.15;      // 弹性系数（劲度系数）
-    const damping = 0.85; // 阻尼（空气阻力，让它慢慢停下来）
+    const k = 0.15;      // 弹性系数
+    const damping = 0.85; // 阻尼
 
-    // 目标缩放比例是 1
-    const displacement = currentY - 1;
-    const force = -k * displacement;
+    // 目标位置是 (0, 100) -> 假设 100 是自然下垂距离
+    const target = { x: 0, y: 100 };
     
-    velY += force;
-    velY *= damping;
-    currentY += velY;
+    const ax = (target.x - curPos.x) * k;
+    const ay = (target.y - curPos.y) * k;
 
-    // 应用形变
-    const scaleX = 1 / Math.sqrt(currentY);
-    teru.style.transform = `scale(${scaleX}, ${currentY})`;
+    vel.x += ax;
+    vel.y += ay;
+    vel.x *= damping;
+    vel.y *= damping;
 
-    // 当位移和速度都足够小时，停止动画
-    if (Math.abs(velY) > 0.001 || Math.abs(currentY - 1) > 0.001) {
-        requestAnimationFrame(updateStretchPhysics);
+    curPos.x += vel.x;
+    curPos.y += vel.y;
+
+    applyTransform(curPos.x, curPos.y);
+
+    if (Math.abs(vel.x) > 0.01 || Math.abs(vel.y) > 0.01 || Math.abs(curPos.x) > 0.01) {
+        requestAnimationFrame(updatePhysics);
     } else {
-        currentY = 1;
-        teru.style.transform = `scale(1, 1)`;
+        teru.style.transform = `rotate(0deg) scale(1, 1)`;
+        teru.style.animation = 'teru-swing 3s ease-in-out infinite alternate';
     }
 }
 
